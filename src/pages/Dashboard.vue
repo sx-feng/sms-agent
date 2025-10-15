@@ -2,7 +2,7 @@
   <div class="dashboard-page">
     <!-- 顶部操作栏 -->
     <div class="top-bar">
-      <div class="left-title">📊 系统首页</div>
+      <div class="left-title">📊 代理控制面板</div>
       <div class="right-actions">
         <el-button type="danger" size="small" @click="confirmLogout">退出登录</el-button>
       </div>
@@ -30,81 +30,85 @@
       </el-card>
     </div>
 
-    <!-- 折线图 -->
-    <el-card class="chart-card">
-      <div class="chart-header">
-        <el-icon><TrendCharts /></el-icon>
-        <span>📈 回码率趋势图</span>
-      </div>
-      <div ref="chartRef" class="chart"></div>
-    </el-card>
-
     <!-- 快捷入口 -->
     <el-card class="quick-entry">
-      <div class="quick-title">⚙️ 快捷入口</div>
+      <div class="quick-title">⚙️ 功能入口</div>
       <div class="quick-buttons">
-        <el-button v-for="(btn, i) in quickBtns" :key="i" @click="goPage(btn.path)">
+        <el-button
+          v-for="(btn, i) in quickBtns"
+          :key="i"
+          type="primary"
+          plain
+          @click="handleQuickClick(btn)"
+        >
           {{ btn.label }}
         </el-button>
       </div>
     </el-card>
+
+    <!-- 弹窗：账单 -->
+    <RecordDialog v-model="showRecordDialog" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import * as echarts from 'echarts'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import RecordDialog from '../components/RecordDialog.vue'
+
+
 import {
   BellFilled,
   UserFilled,
   Coin,
-  Document,
   TrendCharts
 } from '@element-plus/icons-vue'
 
+
 const router = useRouter()
-const noticeText = ref('欢迎使用 wzz.sms.code 系统，当前版本 v1.0.0')
 
+// 公告
+const noticeText = ref('欢迎使用代理后台系统，当前版本 v1.0.0')
+
+// 统计信息
 const stats = ref([
-  { title: '总余额', value: '￥58,960', icon: Coin },
-  { title: '用户数', value: '125', icon: UserFilled },
-  { title: '号码数', value: '2,430', icon: Document },
-  { title: '回码率（24h）', value: '82%', icon: TrendCharts }
+  { title: '我的余额', value: '￥12,580', icon: Coin },
+  { title: '下级总数', value: '8', icon: UserFilled },
+  { title: '今日充值', value: '￥2,430', icon: Coin },
+  { title: '回码率（24h）', value: '81%', icon: TrendCharts }
 ])
 
+// 快捷按钮逻辑
 const quickBtns = ref([
-  { label: '用户管理', path: '/users' },
-  { label: '项目配置', path: '/projects' },
-  { label: '系统设置', path: '/settings' },
-  { label: '日志查看', path: '/logs' }
+  { label: '下级管理', path: '/reseller/users', action: 'subAgent' },
+  { label: '充值 / 扣款', path: '/reseller/recharge', action: 'balance' },
+  { label: '项目价格配置', path: '/reseller/projects', action: 'price' },
+  { label: '账单记录', path: '/reseller/records', action: 'record' }
 ])
 
-// 初始化折线图
-const chartRef = ref(null)
-onMounted(() => {
-  const chart = echarts.init(chartRef.value)
-  const option = {
-    tooltip: { trigger: 'axis' },
-    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: { type: 'category', data: ['10-07', '10-08', '10-09', '10-10', '10-11', '10-12', '10-13'] },
-    yAxis: { type: 'value' },
-    series: [
-      {
-        name: '回码率',
-        type: 'line',
-        smooth: true,
-        data: [68, 75, 71, 82, 84, 87, 80],
-        areaStyle: { opacity: 0.2 },
-        lineStyle: { width: 2 }
-      }
-    ]
-  }
-  chart.setOption(option)
-})
+// 弹窗控制
+const showRecordDialog = ref(false)
 
-// 退出登录确认弹窗
+// 入口按钮点击逻辑
+function handleQuickClick(btn) {
+  switch (btn.action) {
+    case 'subAgent':
+      router.push(btn.path)
+      break
+    case 'balance':
+      router.push(btn.path)
+      break
+    case 'price':
+      router.push(btn.path)
+      break
+    case 'record':
+      showRecordDialog.value = true
+      break
+  }
+}
+
+// 退出登录
 function confirmLogout() {
   ElMessageBox.confirm(
     '确定要退出登录吗？退出后需要重新登录才能访问系统。',
@@ -116,25 +120,12 @@ function confirmLogout() {
     }
   )
     .then(() => {
-      logout()
-      ElMessage({
-        type: 'success',
-        message: '已退出登录',
-      })
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      ElMessage.success('已退出登录')
+      router.push('/login')
     })
-    .catch(() => {
-      ElMessage({
-        type: 'info',
-        message: '已取消操作',
-      })
-    })
-}
-
-// 执行退出逻辑
-function logout() {
-  localStorage.removeItem('token')
-  localStorage.removeItem('userInfo')
-  router.push('/login')
+    .catch(() => ElMessage.info('已取消操作'))
 }
 </script>
 
@@ -208,22 +199,6 @@ function logout() {
   font-size: 20px;
   font-weight: 600;
   color: #333;
-}
-
-/* 折线图 */
-.chart-card {
-  padding: 10px 15px;
-}
-.chart-header {
-  font-weight: 600;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.chart {
-  width: 100%;
-  height: 300px;
 }
 
 /* 快捷入口 */

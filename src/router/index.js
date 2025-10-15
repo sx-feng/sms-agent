@@ -1,55 +1,26 @@
 import { createRouter, createWebHistory } from 'vue-router'
-// import { useResellerStore } from '@/store/resellerStore'
 
-// ✅ 改这里：引用 LoginPage.vue
+// 页面组件
 const LoginPage = () => import('@/pages/LoginPage.vue')
 const DashBoard = () => import('@/pages/DashBoard.vue')
-
+const SubUsers = () => import('@/pages/SubUsers.vue')
+const UserRecharge = () => import('@/pages/UserRecharge.vue')
+const PriceConfig = () => import('@/pages/PriceConfig.vue')
+const UserBill = () => import('@/pages/UserBill.vue')
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    {
-      path: '/',
-      redirect: '/login'
-    },
-    {
-      path: '/login',
-      name: 'Login',
-      component: LoginPage, // ✅ 使用新文件名
-      meta: { title: '登录', public: true }
-    },
-    {
-      path: '/DashBoard',
-      name: 'Dashboard',
-      component: DashBoard,
-      meta: { title: '控制台' }
-    }
+    { path: '/', redirect: '/login' },
+    { path: '/login', component: LoginPage },
+    { path: '/dashboard', component: DashBoard },
+
+    // 快捷入口对应的路由 👇
+    { path: '/reseller/users', component: SubUsers, meta: { title: '下级管理' } },
+    { path: '/reseller/recharge', component: UserRecharge, meta: { title: '充值 / 扣款' } },
+    { path: '/reseller/projects', component: PriceConfig, meta: { title: '项目价格配置' } },
+    { path: '/reseller/records', component: UserBill, meta: { title: '账单记录' } },
   ]
 })
-
-// 路由守卫：未登录禁止进入受限页面
-// router.beforeEach((to, from, next) => {
-//   const store = useResellerStore()
-//   const token = store.token || localStorage.getItem('reseller_token')
-
-//   // 设置页面标题
-//   if (to.meta.title) {
-//     document.title = to.meta.title
-//   }
-
-//   // 允许访问公开页面（如登录页）
-//   if (to.meta.public) {
-//     next()
-//     return
-//   }
-
-//   // 未登录自动跳转登录
-//   if (!token) {
-//     next('/login')
-//   } else {
-//     next()
-//   }
-// })
 
 export default router
