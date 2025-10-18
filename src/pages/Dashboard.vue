@@ -84,7 +84,7 @@ const quickBtns = ref([
   { label: '下级管理', path: '/reseller/users', action: 'subAgent' },
   { label: '充值 / 扣款', path: '/reseller/recharge', action: 'balance' },
   { label: '项目价格配置', path: '/reseller/projects', action: 'price' },
-  { label: '账单记录', path: '/reseller/records', action: 'record' }
+  { label: '账单记录', path: '/reseller/userbill', action: 'userbill' }
 ])
 
 // 弹窗控制
@@ -102,8 +102,8 @@ function handleQuickClick(btn) {
     case 'price':
       router.push(btn.path)
       break
-    case 'record':
-      showRecordDialog.value = true
+    case 'userbill':
+      router.push(btn.path)
       break
   }
 }

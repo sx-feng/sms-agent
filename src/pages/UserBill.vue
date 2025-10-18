@@ -1,153 +1,149 @@
 <template>
-  <div class="sub-users-page">
-    <!-- 顶部操作栏 -->
-    <div class="page-header">
-      <h2>👥 下级管理</h2>
-      <el-button type="primary" size="small" @click="openEditDialog()">➕ 新增下级</el-button>
-    </div>
+  <div class="user-bill">
+    <el-card>
+      <template #header>
+        <div class="flex-between">
+          <span>下级账单明细</span>
+          <div class="filters">
+            <el-date-picker
+              v-model="dateRange"
+              type="daterange"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              value-format="YYYY-MM-DD"
+              style="width: 260px"
+            />
+            <el-input
+              v-model="searchUser"
+              placeholder="输入下级账号"
+              style="width: 180px; margin-left: 10px;"
+            />
+            <el-button type="primary" @click="fetchBills">查询</el-button>
+            <el-button @click="resetFilter">重置</el-button>
+            <el-button type="success" @click="exportExcel">导出Excel</el-button>
+          </div>
+        </div>
+      </template>
 
-    <!-- 表格 -->
-    <el-table
-      :data="tableData"
-      border
-      style="width: 100%"
-      v-loading="loading"
-    >
-      <el-table-column prop="userId" label="用户ID" width="120" />
-      <el-table-column prop="balance" label="余额" width="100" />
-      <el-table-column prop="status" label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'">
-            {{ row.status === 1 ? '启用' : '禁用' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="takeCount" label="取号数" width="100" />
-      <el-table-column prop="replyRate" label="回码率" width="100" />
-      <el-table-column prop="priceJson" label="项目价格JSON" min-width="200">
-        <template #default="{ row }">
-          <el-tooltip placement="top" :content="JSON.stringify(row.priceJson)">
-            <el-text truncated>{{ JSON.stringify(row.priceJson) }}</el-text>
-          </el-tooltip>
-        </template>
-      </el-table-column>
+      <el-table :data="billList" border stripe style="width: 100%">
+        <el-table-column prop="id" label="账单ID" width="100" />
+        <el-table-column prop="user" label="用户账号" width="150" />
+        <el-table-column prop="type" label="类型" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="row.type === 'recharge'" type="success">充值</el-tag>
+            <el-tag v-else-if="row.type === 'consume'" type="danger">消费</el-tag>
+            <el-tag v-else>其他</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="amount" label="金额" width="120">
+          <template #default="{ row }">
+            <span :style="{ color: row.amount < 0 ? '#f56c6c' : '#67c23a' }">
+              {{ row.amount }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="balance" label="余额" width="120" />
+        <el-table-column prop="remark" label="备注" min-width="180" />
+        <el-table-column prop="time" label="时间" width="180" />
+      </el-table>
 
-      <!-- 操作列 -->
-      <el-table-column label="操作" width="260">
-        <template #default="{ row }">
-          <el-button size="small" type="primary" @click="openEditDialog(row)">编辑</el-button>
-          <el-button size="small" type="success" @click="goRecharge(row)">充值</el-button>
-          <el-button size="small" type="info" @click="openRecordDialog(row)">账单</el-button>
-          <el-button size="small" type="danger" @click="deleteUser(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <!-- 分页 -->
-    <div class="pagination-bar">
-      <el-pagination
-        v-model:current-page="page"
-        :page-size="pageSize"
-        :total="total"
-        layout="prev, pager, next, jumper"
-        @current-change="getUserList"
-      />
-    </div>
-
-    <!-- 弹窗组件 -->
-    <UserEditDialog v-model="editDialogVisible" :user="currentUser" @updated="getUserList" />
-    <RecordDialog v-model="recordDialogVisible" :user="currentUser" />
+      <div class="pagination">
+        <el-pagination
+          background
+          layout="prev, pager, next"
+          :page-size="pageSize"
+          :total="total"
+          @current-change="handlePageChange"
+        />
+      </div>
+    </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessageBox, ElMessage } from 'element-plus'
-import UserEditDialog from '@/components/UserEditDialog.vue'
-import RecordDialog from '../components/RecordDialog.vue'
+import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import * as XLSX from 'xlsx'
 
-// 模拟数据加载
-const loading = ref(false)
-const tableData = ref([])
-const page = ref(1)
-const pageSize = ref(10)
+// 模拟分页账单数据
+const billList = ref([])
 const total = ref(0)
-const router = useRouter()
+const pageSize = ref(10)
+const currentPage = ref(1)
+const dateRange = ref([])
+const searchUser = ref('')
 
-const editDialogVisible = ref(false)
-const recordDialogVisible = ref(false)
-const currentUser = ref(null)
+const fetchBills = async () => {
+  // ✅ 示例：实际使用时请替换为 axios 请求
+  // const res = await axios.post('/api/user/bill', {
+  //   user: searchUser.value,
+  //   start: dateRange.value[0],
+  //   end: dateRange.value[1],
+  //   page: currentPage.value,
+  //   size: pageSize.value
+  // })
+  // billList.value = res.data.list
+  // total.value = res.data.total
 
-// 模拟接口请求
-async function getUserList() {
-  loading.value = true
-  // 模拟延迟
-  await new Promise(r => setTimeout(r, 500))
-  // 模拟数据
-  tableData.value = Array.from({ length: 10 }, (_, i) => ({
-    userId: 1000 + i,
-    balance: (Math.random() * 100).toFixed(2),
-    status: Math.random() > 0.3 ? 1 : 0,
-    takeCount: Math.floor(Math.random() * 1000),
-    replyRate: (Math.random() * 100).toFixed(1) + '%',
-    priceJson: { xhs: 0.6, dy: 0.8, tb: 1.2 },
+  billList.value = [
+    { id: 1, user: 'agent001', type: 'recharge', amount: 200, balance: 500, remark: '上级充值', time: '2025-10-18 10:00:00' },
+    { id: 2, user: 'agent001', type: 'consume', amount: -50, balance: 450, remark: '购买短信', time: '2025-10-18 10:10:00' },
+    { id: 3, user: 'agent001', type: 'consume', amount: -20, balance: 430, remark: '项目扣费', time: '2025-10-18 11:00:00' },
+  ]
+  total.value = 3
+}
+
+const handlePageChange = (page) => {
+  currentPage.value = page
+  fetchBills()
+}
+
+const resetFilter = () => {
+  dateRange.value = []
+  searchUser.value = ''
+  fetchBills()
+}
+
+const exportExcel = () => {
+  if (!billList.value.length) {
+    ElMessage.warning('暂无数据可导出')
+    return
+  }
+  const sheetData = billList.value.map(item => ({
+    账单ID: item.id,
+    用户账号: item.user,
+    类型: item.type === 'recharge' ? '充值' : item.type === 'consume' ? '消费' : '其他',
+    金额: item.amount,
+    余额: item.balance,
+    备注: item.remark,
+    时间: item.time
   }))
-  total.value = 100
-  loading.value = false
+  const worksheet = XLSX.utils.json_to_sheet(sheetData)
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, '账单明细')
+  XLSX.writeFile(workbook, `用户账单_${searchUser.value || '全部'}.xlsx`)
+  ElMessage.success('导出成功')
 }
 
-onMounted(() => {
-  getUserList()
-})
-
-// 打开编辑弹窗
-function openEditDialog(user = null) {
-  currentUser.value = user
-  editDialogVisible.value = true
-}
-
-// 打开账单弹窗
-function openRecordDialog(user) {
-  currentUser.value = user
-  recordDialogVisible.value = true
-}
-
-// 跳转充值页
-function goRecharge(user) {
-  router.push({ path: '/reseller/recharge', query: { userId: user.userId } })
-}
-
-// 删除下级
-function deleteUser(user) {
-  ElMessageBox.confirm(`确定删除用户 ${user.userId} 吗？`, '删除确认', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  })
-    .then(() => {
-      tableData.value = tableData.value.filter(u => u.userId !== user.userId)
-      ElMessage.success('已删除')
-    })
-    .catch(() => {})
-}
+fetchBills()
 </script>
 
 <style scoped>
-.sub-users-page {
+.user-bill {
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
-.page-header {
+.flex-between {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.pagination-bar {
+.filters {
   display: flex;
-  justify-content: center;
-  margin-top: 10px;
+  align-items: center;
+  gap: 8px;
+}
+.pagination {
+  margin-top: 20px;
+  text-align: right;
 }
 </style>
