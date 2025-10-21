@@ -1,27 +1,22 @@
 import { defineStore } from 'pinia'
 
-export const useAgentStore = defineStore('agentStore', {
+export const useAgentStore = defineStore('agent', {
   state: () => ({
     token: localStorage.getItem('token') || '',
-    userInfo: (() => {
-      try { return JSON.parse(localStorage.getItem('agent_user') || '{}') } catch { return {} }
-    })(),
+    userInfo: {}
   }),
   actions: {
-    setToken(t) {
-      this.token = t
-      localStorage.setItem('token', t)
+    setToken(token) {
+      const v = typeof token === 'string' ? token : (token ? String(token) : '')
+      this.token = v
+      localStorage.setItem('token', v)
     },
-    setUserInfo(u) {
-      this.userInfo = u || {}
-      localStorage.setItem('agent_user', JSON.stringify(this.userInfo))
-    },
-    logout() {
+    clearToken() {
       this.token = ''
-      this.userInfo = {}
       localStorage.removeItem('token')
-      localStorage.removeItem('agent_user')
+    },
+    setUserInfo(info) {
+      this.userInfo = info
     }
   }
 })
-

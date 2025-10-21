@@ -37,7 +37,7 @@ import { ElMessageBox, ElMessage } from 'element-plus'
 
 
 const router = useRouter()
-
+// todo 面板的中展示带展示
 const stats = ref([
   { title: '我的余额', value: '¥2,580' },
   { title: '下级总数', value: '8' },
@@ -60,6 +60,7 @@ function confirmLogout() {
   })
     .then(() => {
       localStorage.removeItem('token')
+      localStorage.removeItem('agent_token')
       localStorage.removeItem('agent_user')
       ElMessage.success('已退出登录')
       router.push('/login')

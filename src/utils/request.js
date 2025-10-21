@@ -1,12 +1,10 @@
 // src/utils/request.js
-const baseURL = 'http://192.168.110.101:8026/'
+const baseURL = 'http://192.168.110.102:8026/'
 
 export async function request(methodFlag, url, jsonData = {}, isquery = false) {
   try {
-    // 自动拼接防止双斜杠或缺少斜杠
     let finalUrl = baseURL.replace(/\/$/, '') + (url.startsWith('/') ? url : '/' + url)
 
-    // 拼接 query 参数
     if ((methodFlag === 0 && Object.keys(jsonData).length > 0) || (methodFlag === 1 && isquery)) {
       const query = Object.entries(jsonData)
         .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
@@ -14,10 +12,14 @@ export async function request(methodFlag, url, jsonData = {}, isquery = false) {
       finalUrl += (finalUrl.includes('?') ? '&' : '?') + query
     }
 
-    // headers 构建
-    const headers = { 'Content-Type': 'application/json' }
-    const token = localStorage.getItem('token')
-    if (token) headers.Authorization = token
+    // ✅ 自动附加 Token（兼容多命名）
+   
+  const headers = { 'Content-Type': 'application/json' }
+    const token = localStorage.getItem('token') || localStorage.getItem('agent_token')
+    if (token) {
+      headers['Account-token'] = token  // 使用后端要求的字段名
+    }
+    console.log('🔑 使用的 Token:', token)
 
     const options = {
       method: methodFlag === 1 ? 'POST' : 'GET',

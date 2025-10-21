@@ -13,7 +13,7 @@
       style="width: 100%"
       v-loading="loading"
     >
-      <el-table-column prop="userId" label="用户ID" width="120" />
+      <el-table-column prop="id" label="用户ID" width="120" />
       <el-table-column prop="balance" label="余额" width="100" />
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
@@ -22,15 +22,18 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="takeCount" label="取号数" width="100" />
-      <el-table-column prop="replyRate" label="回码率" width="100" />
-      <el-table-column prop="priceJson" label="项目价格JSON" min-width="200">
-        <template #default="{ row }">
-          <el-tooltip placement="top" :content="JSON.stringify(row.priceJson)">
-            <el-text truncated>{{ JSON.stringify(row.priceJson) }}</el-text>
-          </el-tooltip>
-        </template>
-      </el-table-column>
+      <el-table-column prop="totalGetCount" label="取号数" width="100" />
+      <el-table-column prop="totalCodeRate" label="回码率" width="100" />
+      <!-- todo项目价格是null -->
+   <el-table-column label="项目价格JSON" min-width="200">
+      <template #default="{ row }">
+        <el-tooltip placement="top" :content="JSON.stringify(row.priceJson)">
+        <div v-for="(price, id) in row.projectPrices || {}" :key="id">
+  <strong>{{ id }}:</strong> {{ price }}
+</div>
+        </el-tooltip>
+      </template>
+    </el-table-column>
 
       <!-- 操作列 -->
       <el-table-column label="操作" width="260">
@@ -66,11 +69,10 @@ import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import UserEditDialog from '../components/UserEditDialog.vue'
 import RecordDialog from '../components/RecordDialog.vue'
+// eslint-disable-next-line no-unused-vars
+import { listAgentUsers, createAgentUser, updateAgentUser, rechargeAgentUser, deductAgentUser } from '@/api/agent'
 
-
-
-
-// 模拟数据加载
+// 数据加载
 const loading = ref(false)
 const tableData = ref([])
 const page = ref(1)
@@ -80,34 +82,88 @@ const router = useRouter()
 
 const editDialogVisible = ref(false)
 const recordDialogVisible = ref(false)
-const currentUser = ref(null)
+const currentUser = ref(null)  // 当前编辑或新增的用户
+const detailLoading = ref(false)
 
-// 模拟接口请求
+// 获取下级用户数据
 async function getUserList() {
   loading.value = true
-  // 模拟延迟
-  await new Promise(r => setTimeout(r, 500))
-  // 模拟数据
-  tableData.value = Array.from({ length: 10 }, (_, i) => ({
-    userId: 1000 + i,
-    balance: (Math.random() * 100).toFixed(2),
-    status: Math.random() > 0.3 ? 1 : 0,
-    takeCount: Math.floor(Math.random() * 1000),
-    replyRate: (Math.random() * 100).toFixed(1) + '%',
-    priceJson: { xhs: 0.6, dy: 0.8, tb: 1.2 },
-  }))
-  total.value = 100
-  loading.value = false
+  try {
+    const token = localStorage.getItem('token')
+    console.log('Token:', token)
+
+    const res = await listAgentUsers({ page: page.value, pageSize: pageSize.value })
+    console.log(res.data, "代理端口管理下级用户所有数据")
+
+    if (res.ok) {
+      tableData.value = res.data.records || []
+      total.value = res.data.total || 0
+    } else {
+      ElMessage.error('加载数据失败，请稍后重试')
+    }
+  } catch (error) {
+    ElMessage.error('加载数据失败，请稍后重试')
+    console.error('请求失败', error)
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
   getUserList()
 })
 
-// 打开编辑弹窗
+// 打开编辑弹窗（新增或编辑）
 function openEditDialog(user = null) {
-  currentUser.value = user
-  editDialogVisible.value = true
+  if (user && (user.userId || user.id)) {
+    const id = user.userId || user.id
+    loadUserDetail(id)
+  } else {
+    currentUser.value = null
+    editDialogVisible.value = true
+  }
+}
+
+async function loadUserDetail(userId) {
+  try {
+    detailLoading.value = true
+    const res = await listAgentUsers({ userId })
+    if (!res.ok) {
+      ElMessage.error(res.message || '获取用户详情失败')
+      editDialogVisible.value = true
+      return
+    }
+
+    let user = null
+    const data = res.data
+    if (Array.isArray(data?.records)) {
+      user = data.records.find(u => String(u.userId ?? u.id) === String(userId)) || data.records[0]
+    } else if (Array.isArray(data?.list)) {
+      user = data.list.find(u => String(u.userId ?? u.id) === String(userId)) || data.list[0]
+    } else if (Array.isArray(data)) {
+      user = data.find(u => String(u.userId ?? u.id) === String(userId)) || data[0]
+    } else if (data && typeof data === 'object') {
+      user = data
+    }
+
+    if (!user) {
+      ElMessage.warning('未找到该用户的详细信息')
+    }
+
+    currentUser.value = normalizeUser(user)
+    editDialogVisible.value = true
+  } catch (e) {
+    ElMessage.error('网络异常，获取用户详情失败')
+    editDialogVisible.value = true
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+function normalizeUser(u) {
+  if (!u) return null
+  const priceStr = typeof u.priceJson === 'string' ? u.priceJson : JSON.stringify(u.priceJson || u.projectPrices || {})
+  return { ...u, priceJson: priceStr }
 }
 
 // 打开账单弹窗

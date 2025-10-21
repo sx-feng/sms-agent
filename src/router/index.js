@@ -25,7 +25,7 @@ const router = createRouter({
 
 // 简单的登录拦截：未登录访问受限页跳转到登录
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('token') || localStorage.getItem('agent_token')
   if (to.path !== '/login' && !token) {
     next('/login')
   } else if (to.path === '/login' && token) {

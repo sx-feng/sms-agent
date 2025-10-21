@@ -43,13 +43,15 @@ const handleLogin = async () => {
   loading.value = true
   try {
     const res = await agentLogin({ username: form.username.trim(), password: form.password })
+    console.log(res)
     if (!res.ok) {
       ElMessage.error(res.message || '登录失败，请检查账号或密码')
       return
     }
 
     const data = res.data || {}
-    const token = data
+    const token = (typeof data === 'string') ? data : (data.token || data.access_token || data.Authorization || data.auth || '')
+    console.log(token)
     if (!token) {
       ElMessage.error('登录成功但未返回令牌')
       return
@@ -57,6 +59,7 @@ const handleLogin = async () => {
 
     // 存储 token 与用户信息（与路由守卫和请求头保持一致的 key）
     store.setToken(token)
+    localStorage.setItem('token', (typeof token === 'string') ? token : (token ? String(token) : ''))  
     if (data.user || data.userInfo) store.setUserInfo(data.user || data.userInfo)
 
     ElMessage.success('登录成功')
@@ -89,4 +92,3 @@ const handleLogin = async () => {
 .title { text-align: center; font-size: 20px; font-weight: 600; color: #333; margin-bottom: 20px; }
 .login-btn { width: 100%; margin-top: 10px; }
 </style>
-
