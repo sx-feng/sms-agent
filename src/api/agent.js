@@ -34,8 +34,16 @@ export const deductAgentUser = (targetUserId, amount) =>
 
 // 查看下级用户资金账本
 export const viewAgentUserLedger = (params) => request(0, '/api/agent/viewUserLedger', params, true)
-
+// 下级账单流水（GET，参数放 Query）
+export const UserLedger = (params) =>
+  request(0, '/api/agent/subordinate-ledgers', params, true)
 // ==================== 仪表盘统计 ====================
 // 获取首页四个统计卡片数据（GET）
 export const getDashboardStats = (params = {}) => request(0, '/api/agent/dashboard-stats', params, true)
 
+// 项目价格配置
+// 代理获取「项目列表」接口（GET）
+export const getAgentProjects = () =>
+  request(0, '/api/agent/get/by-agent/project', {}, true)
+
+// 更新

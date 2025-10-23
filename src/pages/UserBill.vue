@@ -10,7 +10,7 @@
               type="daterange"
               start-placeholder="开始日期"
               end-placeholder="结束日期"
-              value-format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD HH:mm:ss"
               style="width: 260px"
             />
             <el-input
@@ -48,13 +48,15 @@
       </el-table>
 
       <div class="pagination">
-        <el-pagination
-          background
-          layout="prev, pager, next"
-          :page-size="pageSize"
-          :total="total"
-          @current-change="handlePageChange"
-        />
+      <el-pagination
+  background
+  layout="prev, pager, next, jumper, sizes, total"
+  :current-page="currentPage"
+  :page-size="pageSize"
+  :total="total"
+  @size-change="size => { pageSize = size; fetchBills() }"
+  @current-change="handlePageChange"
+/>
       </div>
     </el-card>
   </div>
@@ -64,7 +66,7 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as XLSX from 'xlsx'
-import{viewAgentUserLedger} from '@/api/agent'
+import{UserLedger} from '@/api/agent'
 
 // 模拟分页账单数据
 const billList = ref([])
@@ -73,16 +75,22 @@ const pageSize = ref(10)
 const currentPage = ref(1)
 const dateRange = ref([])
 const searchUser = ref('')
-// todo待完善接口
 const fetchBills = async () => {
+  // 必填校验：ID 或 日期至少填一个
+  if (!searchUser.value || (!dateRange.value || dateRange.value.length !== 2)) {
+    ElMessage.warning('请输入下级账号ID 和 选择时间范围')
+    return
+  }
+
   const params = {
-    targetUserId: searchUser.value || undefined, // 账号筛选（可选）
- 
+    targetUserId: searchUser.value ? Number(searchUser.value) : undefined,
+    startTime: dateRange.value?.[0] || undefined,
+    endTime: dateRange.value?.[1] || undefined,
     page: currentPage.value,
     size: pageSize.value
   }
 
-  const res = await viewAgentUserLedger(params)
+  const res = await UserLedger(params)
   if (!res.ok) {
     ElMessage.error(res.message || '获取账单失败')
     return
@@ -91,16 +99,15 @@ const fetchBills = async () => {
   // 后端字段 → 表格字段 一次性映射
   billList.value = (res.data.records || []).map(i => ({
     id: i.id,
-    user: i.userId || '',              // 后端叫 userId
-    type: i.price > 0 ? 'recharge' : 'consume', // 用正负判断类型
-    amount: Number(i.price),           // 后端叫 price
+    user: i.userId || '',
+    type: i.price > 0 ? 'recharge' : 'consume',
+    amount: Number(i.price),
     balance: Number(i.balance || 0),
     remark: i.description || i.remark || '--',
     time: i.createTime || i.time
   }))
   total.value = res.data.total || 0
 }
-
 const handlePageChange = (page) => {
   currentPage.value = page
   fetchBills()
