@@ -22,11 +22,11 @@ export const updateAgentUser = (data) => request(1, '/api/agent/updateUser', dat
 
 // 为下级用户充值
 export const rechargeAgentUser = (targetUserId, amount) =>
-  request(1, '/api/agent/rechargeUser', { targetUserId, amount }, true)
+  request(1, '/api/agent/rechargeUser', { targetUserId, amount },true)
 
 // 扣减下级用户余额
 export const deductAgentUser = (targetUserId, amount) =>
-  request(1, '/api/agent/deductUser', { targetUserId, amount }, true)
+  request(1, '/api/agent/deductUser', { targetUserId, amount },true)
 
 // ==================== 账本查看 ====================
 

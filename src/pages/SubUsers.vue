@@ -13,7 +13,7 @@
       style="width: 100%"
       v-loading="loading"
     >
-      <el-table-column prop="id" label="用户ID" width="120" />
+      <el-table-column prop="userName" label="用户名" width="120" />
       <el-table-column prop="balance" label="余额" width="100" />
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
@@ -24,7 +24,13 @@
       </el-table-column>
       <el-table-column prop="totalGetCount" label="取号数" width="100" />
       <el-table-column prop="totalCodeRate" label="回码率" width="100" />
-      <!-- todo项目价格是null -->
+      <el-table-column label="代理" width="80">
+  <template #default="{ row }">
+    <el-tag :type="row.isAgent ? 'success' : 'info'">
+      {{ row.isAgent ? '是' : '否' }}
+    </el-tag>
+  </template>
+</el-table-column>      <!-- todo项目价格是null -->
    <el-table-column label="项目价格JSON" min-width="200">
       <template #default="{ row }">
         <el-tooltip placement="top" :content="JSON.stringify(row.priceJson)">
@@ -40,8 +46,8 @@
         <template #default="{ row }">
           <el-button size="small" type="primary" @click="openEditDialog(row)">编辑</el-button>
           <el-button size="small" type="success" @click="goRecharge(row)">充值</el-button>
-          <el-button size="small" type="info" @click="openRecordDialog(row)">账单</el-button>
-          <el-button size="small" type="danger" @click="deleteUser(row)">删除</el-button>
+<el-button size="small" type="info" @click="openRecordDialog(row)">账单</el-button>
+          
         </template>
       </el-table-column>
     </el-table>
@@ -57,16 +63,16 @@
       />
     </div>
 
-    <!-- 弹窗组件 -->
-    <UserEditDialog v-model="editDialogVisible" :user="currentUser" @updated="getUserList" />
-    <RecordDialog v-model="recordDialogVisible" :user="currentUser" />
+    <!-- 弹窗组件（仅在显示时渲染，避免 Teleport 异常） -->
+    <UserEditDialog v-if="editDialogVisible" v-model="editDialogVisible" :user="currentUser" @updated="getUserList" />
+    <RecordDialog v-if="recordDialogVisible" v-model="recordDialogVisible" :user="currentUser" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import {  ElMessage } from 'element-plus'
 import UserEditDialog from '../components/UserEditDialog.vue'
 import RecordDialog from '../components/RecordDialog.vue'
 // eslint-disable-next-line no-unused-vars
@@ -115,15 +121,13 @@ onMounted(() => {
 
 // 打开编辑弹窗（新增或编辑）
 function openEditDialog(user = null) {
-  if (user && (user.userId || user.id)) {
-    const id = user.userId || user.id
-    loadUserDetail(id)
+  if (user && user.id) {
+    loadUserDetail(user.id)  
   } else {
     currentUser.value = null
     editDialogVisible.value = true
   }
 }
-
 async function loadUserDetail(userId) {
   try {
     detailLoading.value = true
@@ -167,28 +171,13 @@ function normalizeUser(u) {
 }
 
 // 打开账单弹窗
-function openRecordDialog(user) {
-  currentUser.value = user
+function openRecordDialog(row) {
+  currentUser.value = row         // ✅ 整行传，组件里用 row.id
   recordDialogVisible.value = true
 }
-
-// 跳转充值页
-function goRecharge(user) {
-  router.push({ path: '/reseller/recharge', query: { userId: user.userId } })
-}
-
-// 删除下级
-function deleteUser(user) {
-  ElMessageBox.confirm(`确定删除用户 ${user.userId} 吗？`, '删除确认', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  })
-    .then(() => {
-      tableData.value = tableData.value.filter(u => u.userId !== user.userId)
-      ElMessage.success('已删除')
-    })
-    .catch(() => {})
+// 充值页面
+function goRecharge(row) {
+  router.push({ path: '/reseller/recharge', query: { userId: row.id } }) // ✅ 这里
 }
 </script>
 

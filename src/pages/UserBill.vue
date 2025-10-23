@@ -15,7 +15,7 @@
             />
             <el-input
               v-model="searchUser"
-              placeholder="输入下级账号"
+              placeholder="输入下级账号ID"
               style="width: 180px; margin-left: 10px;"
             />
             <el-button type="primary" @click="fetchBills">查询</el-button>
@@ -64,6 +64,7 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as XLSX from 'xlsx'
+import{viewAgentUserLedger} from '@/api/agent'
 
 // 模拟分页账单数据
 const billList = ref([])
@@ -72,25 +73,32 @@ const pageSize = ref(10)
 const currentPage = ref(1)
 const dateRange = ref([])
 const searchUser = ref('')
-
+// todo待完善接口
 const fetchBills = async () => {
-  // ✅ 示例：实际使用时请替换为 axios 请求
-  // const res = await axios.post('/api/user/bill', {
-  //   user: searchUser.value,
-  //   start: dateRange.value[0],
-  //   end: dateRange.value[1],
-  //   page: currentPage.value,
-  //   size: pageSize.value
-  // })
-  // billList.value = res.data.list
-  // total.value = res.data.total
+  const params = {
+    targetUserId: searchUser.value || undefined, // 账号筛选（可选）
+ 
+    page: currentPage.value,
+    size: pageSize.value
+  }
 
-  billList.value = [
-    { id: 1, user: 'agent001', type: 'recharge', amount: 200, balance: 500, remark: '上级充值', time: '2025-10-18 10:00:00' },
-    { id: 2, user: 'agent001', type: 'consume', amount: -50, balance: 450, remark: '购买短信', time: '2025-10-18 10:10:00' },
-    { id: 3, user: 'agent001', type: 'consume', amount: -20, balance: 430, remark: '项目扣费', time: '2025-10-18 11:00:00' },
-  ]
-  total.value = 3
+  const res = await viewAgentUserLedger(params)
+  if (!res.ok) {
+    ElMessage.error(res.message || '获取账单失败')
+    return
+  }
+
+  // 后端字段 → 表格字段 一次性映射
+  billList.value = (res.data.records || []).map(i => ({
+    id: i.id,
+    user: i.userId || '',              // 后端叫 userId
+    type: i.price > 0 ? 'recharge' : 'consume', // 用正负判断类型
+    amount: Number(i.price),           // 后端叫 price
+    balance: Number(i.balance || 0),
+    remark: i.description || i.remark || '--',
+    time: i.createTime || i.time
+  }))
+  total.value = res.data.total || 0
 }
 
 const handlePageChange = (page) => {
