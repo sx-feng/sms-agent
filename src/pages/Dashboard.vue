@@ -30,20 +30,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref,onMounted } from 'vue'
 import NoticeBar from '@/components/NoticeBar.vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-
+import {getAgentDashboard } from '@/api/agent'
 
 const router = useRouter()
 // todo 面板的中展示带展示
-const stats = ref([
-  { title: '我的余额', value: '¥2,580' },
-  { title: '下级总数', value: '8' },
-  { title: '今日充值', value: '¥1,430' },
-  { title: '回码率（24h）', value: '81%' }
-])
 
 const quickBtns = ref([
   { label: '下级管理', path: '/reseller/users' },
@@ -67,6 +61,30 @@ function confirmLogout() {
     })
     .catch(() => {})
 }
+const stats = ref([])   // 先空，等数据
+
+async function loadDashboard() {
+  try {
+    const res = await getAgentDashboard()
+    if (res.ok) {
+      // 按后端返回字段映射，字段不一致就改下面 key
+      stats.value = [
+        { title: '我的余额', value: `¥${res.data.myBalance || 0}` },
+        { title: '下级总数', value: res.data.totalSubUsers || 0 },
+        { title: '今日充值', value: `¥${res.data.todaySubUsersRecharge || 0}` },
+        { title: '回码率（24h）', value: `${res.data.subUsersCodeRate || 0}%` }
+      ]
+    } else {
+      ElMessage.error(res.message || '获取仪表盘数据失败')
+    }
+  } catch {
+    ElMessage.error('网络异常')
+  }
+}
+
+onMounted(() => {
+  loadDashboard()   // ✅ 进入页面自动请求
+})
 </script>
 
 <style scoped>

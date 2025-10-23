@@ -31,21 +31,55 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { rechargeAgentUser, deductAgentUser } from '@/api/agent'
+
+const route = useRoute()
+const router = useRouter()
+
+const userId   = ref('')
+const amount   = ref('')
+const actionType = ref('recharge')
+const loading  = ref(false)
+
+onMounted(() => {
+  userId.value = route.query.userId || ''   // ① 自动带参
+})
+
+async function handleSubmit() {
+  if (!userId.value || !amount.value || Number(amount.value) <= 0) {
+    ElMessage.warning('请输入有效的用户ID和正数金额')
+    return
+  }
+
+  loading.value = true
+  try {
+    
+    const res = await (
+  actionType.value === 'recharge' ? rechargeAgentUser : deductAgentUser
+)(
+  Number(userId.value),
+  Number(amount.value)
+)
+    if (res.ok) {
+      ElMessage.success(actionType.value === 'recharge' ? '充值成功' : '扣款成功')
+      userId.value = ''
+      amount.value = ''
+      router.back()          // ② 返回上级
+    } else {
+      ElMessage.error(res.message || '操作失败')
+    }
+  } catch {
+    ElMessage.error('网络异常')
+  } finally {
+    loading.value = false
+  }
+}
 
 
-// 表单数据
-const userId = ref("");
-const amount = ref("");
-const actionType = ref("recharge");
-const loading = ref(false);
-const message = ref("");
-const success = ref(false);
 
-// 模拟父组件方法（实际开发中由父级传入）
-
-
-// 提交逻辑
 
 </script>
 
