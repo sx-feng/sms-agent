@@ -3,7 +3,9 @@
     <!-- 顶部操作栏 -->
     <div class="page-header">
       <h2>👥 下级管理</h2>
+      <el-button type="success" size="small" @click="getUserList">🔄 刷新</el-button>
       <el-button type="primary" size="small" @click="openEditDialog()">➕ 新增下级</el-button>
+              
     </div>
 
     <!-- 表格 -->
@@ -62,7 +64,7 @@
         @current-change="getUserList"
       />
     </div>
-
+<EditDialog v-model="addDialogVisible" />
     <!-- 弹窗组件（仅在显示时渲染，避免 Teleport 异常） -->
     <UserEditDialog v-if="editDialogVisible" v-model="editDialogVisible" :user="currentUser" @updated="getUserList" />
     <RecordDialog v-if="recordDialogVisible" v-model="recordDialogVisible" :user="currentUser" />
@@ -75,6 +77,9 @@ import { useRouter } from 'vue-router'
 import {  ElMessage } from 'element-plus'
 import UserEditDialog from '../components/UserEditDialog.vue'
 import RecordDialog from '../components/RecordDialog.vue'
+import EditDialog from '@/components/EditDialog.vue'
+
+
 // eslint-disable-next-line no-unused-vars
 import { listAgentUsers, createAgentUser, updateAgentUser, rechargeAgentUser, deductAgentUser } from '@/api/agent'
 
@@ -85,7 +90,7 @@ const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const router = useRouter()
-
+const addDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const recordDialogVisible = ref(false)
 const currentUser = ref(null)  // 当前编辑或新增的用户
@@ -120,12 +125,14 @@ onMounted(() => {
 })
 
 // 打开编辑弹窗（新增或编辑）
-function openEditDialog(user = null) {
+async function openEditDialog(user = null) {
   if (user && user.id) {
-    loadUserDetail(user.id)  
-  } else {
-    currentUser.value = null
+    await loadUserDetail(user.id) 
+      currentUser.value = user
     editDialogVisible.value = true
+  } else {
+   currentUser.value = null
+    addDialogVisible.value = true
   }
 }
 async function loadUserDetail(userId) {
