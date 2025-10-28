@@ -47,3 +47,8 @@ export const getAgentProjects = () =>
   request(0, '/api/agent/get/by-agent/project', {}, true)
 
 // 更新
+export const getProjectConfig = () =>
+  request(0, '/api/agent/get/by-agent/project', {}, true)
+
+export const  updateProjectConfig = () =>
+  request(1, '/api/agent/update/by-agent/project-config', {}, true)
