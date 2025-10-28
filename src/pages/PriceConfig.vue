@@ -1,8 +1,10 @@
 <template>
   <div class="price-config">
+
     <el-card>
       <template #header>
         <div class="flex-between">
+ <el-button class="back-btn" @click="goBack" size="small">⬅ 返回</el-button>
           <span>项目价格配置</span>
           <el-button type="primary" @click="fetchData">刷新</el-button>
         </div>
@@ -35,6 +37,17 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import PriceEditor from '@/components/PriceEditor.vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+function goBack() {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/admin/dashboard') // 没有历史时跳转到后台首页或你想的上级页
+  }
+}
 
 const projects = ref([])
 const showEditor = ref(false)
@@ -67,4 +80,30 @@ fetchData()
 <style scoped>
 .price-config { padding: 20px; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
+.left-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.back-btn {
+  background: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+  background: #f6c244;
+  color: #000;
+  border-color: #f6c244;
+}
+
+.header-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
+}
+
 </style>

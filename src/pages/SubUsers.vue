@@ -2,11 +2,17 @@
   <div class="sub-users-page">
     <!-- 顶部操作栏 -->
     <div class="page-header">
-      <h2>👥 下级管理</h2>
-      <el-button type="success" size="small" @click="getUserList">🔄 刷新</el-button>
-      <el-button type="primary" size="small" @click="openEditDialog()">➕ 新增下级</el-button>
-              
-    </div>
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <el-button type="info" size="small" @click="goBack">⬅ 返回</el-button>
+    <h2>👥 下级管理</h2>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <el-button type="success" size="small" @click="getUserList">🔄 刷新</el-button>
+    <el-button type="primary" size="small" @click="openEditDialog()">➕ 新增下级</el-button>
+  </div>
+</div>
+
 
     <!-- 表格 -->
     <el-table
@@ -14,34 +20,26 @@
       border
       style="width: 100%"
       v-loading="loading"
+      resizable="false"     
     >
-      <el-table-column prop="userName" label="用户名" width="120" />
-      <el-table-column prop="balance" label="余额" width="100" />
-      <el-table-column prop="status" label="状态" width="100">
+      <el-table-column prop="userName" label="用户名"  />
+      <el-table-column prop="balance" label="余额"  />
+      <el-table-column prop="status" label="状态" >
         <template #default="{ row }">
           <el-tag :type="row.status === 1 ? 'success' : 'info'">
             {{ row.status === 1 ? '启用' : '禁用' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="totalGetCount" label="取号数" width="100" />
-      <el-table-column prop="totalCodeRate" label="回码率" width="100" />
-      <el-table-column label="代理" width="80">
+      <el-table-column prop="totalGetCount" label="取号数"  />
+      <el-table-column prop="totalCodeRate" label="回码率"  />
+      <el-table-column label="代理" >
   <template #default="{ row }">
     <el-tag :type="row.isAgent ? 'success' : 'info'">
       {{ row.isAgent ? '是' : '否' }}
     </el-tag>
   </template>
-</el-table-column>      <!-- todo项目价格是null -->
-   <el-table-column label="项目价格JSON" min-width="200">
-      <template #default="{ row }">
-        <el-tooltip placement="top" :content="JSON.stringify(row.priceJson)">
-        <div v-for="(price, id) in row.projectPrices || {}" :key="id">
-  <strong>{{ id }}:</strong> {{ price }}
-</div>
-        </el-tooltip>
-      </template>
-    </el-table-column>
+</el-table-column>
 
       <!-- 操作列 -->
       <el-table-column label="操作" width="260">
@@ -95,6 +93,17 @@ const editDialogVisible = ref(false)
 const recordDialogVisible = ref(false)
 const currentUser = ref(null)  // 当前编辑或新增的用户
 const detailLoading = ref(false)
+
+
+function goBack() {
+  // 如果有上级路由历史，优先返回
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    // 否则直接返回到代理控制面板（或自定义首页路径）
+    router.push('/reseller/dashboard')
+  }
+}
 
 // 获取下级用户数据
 async function getUserList() {

@@ -3,6 +3,7 @@
     <el-card>
       <template #header>
         <div class="flex-between">
+           <el-button class="back-btn" @click="goBack" size="small">⬅ 返回</el-button>
           <span>下级账单明细</span>
           <div class="filters">
             <el-date-picker
@@ -67,6 +68,16 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as XLSX from 'xlsx'
 import{UserLedger} from '@/api/agent'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+
+function goBack() {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/reseller/sub-users') // 无历史记录时回到下级管理页
+  }
+}
 
 // 模拟分页账单数据
 const billList = ref([])
@@ -76,18 +87,17 @@ const currentPage = ref(1)
 const dateRange = ref([])
 const searchUser = ref('')
 const fetchBills = async () => {
-  // 必填校验：ID 或 日期至少填一个
-  if (!searchUser.value || (!dateRange.value || dateRange.value.length !== 2)) {
-    ElMessage.warning('请输入下级账号ID 和 选择时间范围')
-    return
+  // ✅ 不再强制输入条件：支持显示全部账单
+  const params = {
+    page: currentPage.value,
+    size: pageSize.value,
   }
 
-  const params = {
-    targetUserId: searchUser.value ? Number(searchUser.value) : undefined,
-    startTime: dateRange.value?.[0] || undefined,
-    endTime: dateRange.value?.[1] || undefined,
-    page: currentPage.value,
-    size: pageSize.value
+  // 如果选择了用户ID或日期范围，就带上参数
+  if (searchUser.value) params.targetUserId = Number(searchUser.value)
+  if (dateRange.value && dateRange.value.length === 2) {
+    params.startTime = dateRange.value[0]
+    params.endTime = dateRange.value[1]
   }
 
   const res = await UserLedger(params)
@@ -96,7 +106,6 @@ const fetchBills = async () => {
     return
   }
 
-  // 后端字段 → 表格字段 一次性映射
   billList.value = (res.data.records || []).map(i => ({
     id: i.id,
     user: i.userId || '',
@@ -108,6 +117,7 @@ const fetchBills = async () => {
   }))
   total.value = res.data.total || 0
 }
+
 const handlePageChange = (page) => {
   currentPage.value = page
   fetchBills()
@@ -140,7 +150,7 @@ const exportExcel = () => {
   ElMessage.success('导出成功')
 }
 
-fetchBills()
+
 </script>
 
 <style scoped>
@@ -161,4 +171,30 @@ fetchBills()
   margin-top: 20px;
   text-align: right;
 }
+.left-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.back-btn {
+  background: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+  background: #f6c244;
+  color: #000;
+  border-color: #f6c244;
+}
+
+.header-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
+}
+
 </style>

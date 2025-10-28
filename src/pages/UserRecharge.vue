@@ -1,5 +1,8 @@
 <template>
   <div class="agent-recharge-page">
+     <button class="back-float-btn" @click="goBack">
+      ⬅ 返回
+    </button>
     <div class="card">
       <h2 class="title">下级充值 / 扣款</h2>
 
@@ -75,6 +78,13 @@ async function handleSubmit() {
     ElMessage.error('网络异常')
   } finally {
     loading.value = false
+  }
+}
+function goBack() {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/reseller/sub-users') // 无历史则直接返回“下级管理”页
   }
 }
 
@@ -167,4 +177,28 @@ select:focus {
 .message.error {
   color: #f44336;
 }
+.back-float-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: #fff;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.25s ease;
+}
+
+.back-float-btn:hover {
+  background: #f6c244;
+  color: #000;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+}
+
 </style>
