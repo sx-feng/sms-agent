@@ -47,3 +47,19 @@ export const getAgentProjects = () =>
   request(0, '/api/agent/get/by-agent/project', {}, true)
 
 // 更新
+export const getProjectConfig = () =>
+  request(0, '/api/agent/get/by-agent/project', {}, true)
+
+export function updateProjectConfig(data) {
+  return request(
+    1,  // 1 表示 POST
+    '/api/agent/update/by-agent/project-config',  // ✅ 这是第二个参数 url
+    {
+      userProjectLineId: Number(data.id),
+      agentPrice: Number(data.price),
+      remark: data.remark ?? '',
+           projectId: data.projectId,             // ✅ 新增字段
+      lineId: data.lineId   
+    }
+  )
+}
