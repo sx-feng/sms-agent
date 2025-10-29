@@ -43,8 +43,8 @@ export const getDashboardStats = (params = {}) => request(0, '/api/agent/dashboa
 
 // 项目价格配置
 // 代理获取「项目列表」接口（GET）
-export const getAgentProjects = () =>
-  request(0, '/api/agent/get/by-agent/project', {}, true)
+export const getAgentProjects = (params) =>
+  request(0, '/api/agent/get/by-agent/project', params, true)
 
 // 更新
 export const getProjectConfig = () =>

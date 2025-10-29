@@ -9,6 +9,7 @@
         </div>
       </template>
 
+      <!-- 表格部分保持不变 -->
       <el-table :data="projects" border stripe v-loading="loading">
         <el-table-column prop="userId" label="用户ID" width="80" />
         <el-table-column prop="userName" label="用户名" width="120" />
@@ -20,15 +21,28 @@
         <el-table-column prop="costPrice" label="成本价" width="100" />
         <el-table-column prop="maxPrice" label="最高价" width="100" />
         <el-table-column prop="minPrice" label="最低价" width="100" />
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="openEditor(row)">编辑</el-button>
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- [新增] 分页组件 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.size"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="pagination.total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </el-card>
 
-    <!-- 编辑弹窗 -->
+    <!-- 编辑弹窗部分保持不变 -->
     <el-dialog
       v-model="showEditor"
       title="编辑项目配置"
@@ -71,10 +85,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive } from 'vue' // reactive 可以用于组织分页数据
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { getProjectConfig, updateProjectConfig } from '@/api/agent'
+// [注意] 确保这里的 API 函数名称是正确的
+import { getAgentProjects, updateProjectConfig } from '@/api/agent'
 
 const router = useRouter()
 const loading = ref(false)
@@ -82,28 +97,52 @@ const projects = ref([])
 const showEditor = ref(false)
 const form = ref({})
 
+// [修改] 1. 定义分页相关的响应式数据
+const pagination = reactive({
+  page: 1,  // 当前页
+  size: 10, // 每页数量
+  total: 0, // 总数据条数
+})
+
 // 返回上级
 function goBack() {
   if (window.history.length > 1) router.back()
   else router.push('/admin/dashboard')
 }
 
-// 获取项目配置（二维转一维）
+// [修改] 2.改造数据获取函数以支持分页
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await getProjectConfig()
-    if (res.code === 200 && Array.isArray(res.data)) {
-      projects.value = res.data.flatMap(user => {
+    // 传递分页参数
+    const params = {
+      page: pagination.page,
+      size: pagination.size,
+    }
+    // [注意] 根据你的 API 定义，这里我使用了 getAgentProjects
+    const res = await getAgentProjects(params) 
+    
+    // 后端返回的数据结构是 { code, message, data: { records, total, ... } }
+    if (res.code === 200 && res.data) {
+      // 二维数据转一维，这个逻辑是正确的，保持不变
+      projects.value = res.data.records.flatMap(user => {
+        // 如果用户没有价格配置，也返回一条用户信息，让表格显示用户名，但后续列为空
         if (!Array.isArray(user.projectPrices) || user.projectPrices.length === 0) {
-          return []
+          return [{
+            userId: user.userId,
+            userName: user.userName,
+          }]
         }
+        // 正常展开用户的价格配置
         return user.projectPrices.map(p => ({
           userId: user.userId,
           userName: user.userName,
           ...p
         }))
       })
+      
+      // 更新总数据条数
+      pagination.total = res.data.total
     } else {
       ElMessage.error(res.message || '获取项目配置失败')
     }
@@ -115,28 +154,47 @@ const fetchData = async () => {
   }
 }
 
+// [新增] 3. 处理每页显示数量变化的函数
+const handleSizeChange = (newSize) => {
+  pagination.size = newSize
+  pagination.page = 1 // 切换每页数量时，通常返回第一页
+  fetchData()
+}
+
+// [新增] 4. 处理页码变化的函数
+const handleCurrentChange = (newPage) => {
+  pagination.page = newPage
+  fetchData()
+}
+
+
 // 打开编辑弹窗
 const openEditor = (row) => {
+  // 添加一个判断，防止对没有价格配置的用户行进行编辑
+  if (!row.id) {
+    ElMessage.warning('该用户暂无项目价格配置，无法编辑')
+    return
+  }
   form.value = { ...row }
   showEditor.value = true
 }
 
-// 保存修改
+// 保存修改 (保持不变)
 const saveProjectConfig = async () => {
   try {
     const params = {
-      id: form.value.id,              // projectPrices.id
+      id: form.value.id,
       price: form.value.price,
       remark: form.value.remark || '',
-      projectId: form.value.projectId, // ✅ 一起上传
-      lineId: form.value.lineId       // ✅ 一起上传
+      projectId: form.value.projectId,
+      lineId: form.value.lineId
     }
 
     const res = await updateProjectConfig(params)
     if (res.code === 200) {
       ElMessage.success('项目配置已更新')
       showEditor.value = false
-      fetchData()
+      fetchData() // 更新后重新获取当前页数据
     } else {
       ElMessage.error(res.message || '更新失败')
     }
@@ -146,6 +204,7 @@ const saveProjectConfig = async () => {
   }
 }
 
+// 页面加载时首次获取数据
 fetchData()
 </script>
 
@@ -169,5 +228,12 @@ fetchData()
   background: #f6c244;
   color: #000;
   border-color: #f6c244;
+}
+
+/* [新增] 分页容器样式 */
+.pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
 }
 </style>

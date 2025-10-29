@@ -45,7 +45,7 @@
         </el-table-column>
         <el-table-column prop="balance" label="余额" width="120" />
         <el-table-column prop="remark" label="备注" min-width="180" />
-        <el-table-column prop="time" label="时间" width="180" />
+        <el-table-column prop="timestamp" label="时间" width="180" />
       </el-table>
 
       <div class="pagination">
@@ -64,7 +64,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as XLSX from 'xlsx'
 import{UserLedger} from '@/api/agent'
@@ -113,7 +113,7 @@ const fetchBills = async () => {
     amount: Number(i.price),
     balance: Number(i.balance || 0),
     remark: i.description || i.remark || '--',
-    time: i.createTime || i.time
+     timestamp: i.timestamp || i.createTime || '--'
   }))
   total.value = res.data.total || 0
 }
@@ -141,7 +141,7 @@ const exportExcel = () => {
     金额: item.amount,
     余额: item.balance,
     备注: item.remark,
-    时间: item.time
+    时间: item.timestamp
   }))
   const worksheet = XLSX.utils.json_to_sheet(sheetData)
   const workbook = XLSX.utils.book_new()
@@ -150,7 +150,9 @@ const exportExcel = () => {
   ElMessage.success('导出成功')
 }
 
-
+onMounted(() => {
+  fetchBills()
+})
 </script>
 
 <style scoped>

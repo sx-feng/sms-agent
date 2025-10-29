@@ -27,12 +27,17 @@
       <el-table-column prop="status" label="状态" >
         <template #default="{ row }">
           <el-tag :type="row.status === 1 ? 'success' : 'info'">
-            {{ row.status === 1 ? '启用' : '禁用' }}
+            {{ row.status === 1 ? '禁用' : '启用' }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="totalGetCount" label="取号数"  />
-      <el-table-column prop="totalCodeRate" label="回码率"  />
+      <el-table-column label="回码率">
+  <template #default="{ row }">
+    {{ formatRate(row.totalCodeRate) }}
+  </template>
+</el-table-column>
+
       <el-table-column label="代理" >
   <template #default="{ row }">
     <el-tag :type="row.isAgent ? 'success' : 'info'">
@@ -128,6 +133,15 @@ async function getUserList() {
     loading.value = false
   }
 }
+// ===========回码率转换
+function formatRate(value) {
+  if (value == null || isNaN(value)) return '--'
+  // 如果是 0-1 之间的小数，比如 0.85 → 85%
+  // 如果已经是百分比数字，比如 85 → 85%
+  const rate = value <= 1 ? value * 100 : value
+  return `${rate.toFixed(0)}%`
+}
+
 
 onMounted(() => {
   getUserList()
