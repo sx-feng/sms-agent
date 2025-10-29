@@ -128,7 +128,7 @@ async function getUserList() {
     }
   } catch (error) {
     ElMessage.error('加载数据失败，请稍后重试')
-    console.error('请求失败', error)
+    console.error('请求失败', error)              
   } finally {
     loading.value = false
   }

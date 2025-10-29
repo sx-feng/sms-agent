@@ -62,7 +62,7 @@ const router = useRouter()
 
 const quickBtns = ref([
   { label: '下级管理', path: '/reseller/users' },
-  { label: '充值 / 扣款', path: '/reseller/recharge' },
+  // { label: '充值 / 扣款', path: '/reseller/recharge' },
   { label: '项目价格配置', path: '/reseller/projects' },
   { label: '账单记录', path: '/reseller/userbill' }
 ])
