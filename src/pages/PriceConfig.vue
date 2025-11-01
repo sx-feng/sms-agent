@@ -156,6 +156,7 @@ const fetchData = async () => {
         }))
       })
       pagination.total = res.data.total
+         searchUserName.value = ''
     } else {
       ElMessage.error(res.message || '获取项目配置失败')
     }
