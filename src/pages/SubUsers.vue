@@ -8,9 +8,18 @@
   </div>
 
   <div style="display: flex; align-items: center; gap: 10px;">
+    <el-input
+      v-model="searchUserName"
+      placeholder="输入下级用户名"
+      clearable
+      size="small"
+      style="width: 160px"
+    />
+    <el-button type="primary" size="small" @click="getUserList">🔍 查询</el-button>
     <el-button type="success" size="small" @click="getUserList">🔄 刷新</el-button>
     <el-button type="primary" size="small" @click="openEditDialog()">➕ 新增下级</el-button>
   </div>
+
 </div>
 
 
@@ -94,6 +103,7 @@ import EditDialog from '@/components/EditDialog.vue'
 import { listAgentUsers, createAgentUser, updateAgentUser, rechargeAgentUser, deductAgentUser } from '@/api/agent'
 import UserRecharge from '../components/UserRecharge.vue'
 const rechargeDialogVisible = ref(false)
+const searchUserName = ref('')
 
 // 数据加载
 const loading = ref(false)
@@ -123,25 +133,33 @@ function goBack() {
 async function getUserList() {
   loading.value = true
   try {
-    const token = localStorage.getItem('token')
-    console.log('Token:', token)
+    const params = {
+      page: page.value,
+      pageSize: pageSize.value,
+    }
 
-    const res = await listAgentUsers({ page: page.value, pageSize: pageSize.value })
+    // ✅ 如果输入了用户名就带上查询条件
+    if (searchUserName.value) {
+      params.userName = searchUserName.value.trim()
+    }
+
+    const res = await listAgentUsers(params)
     console.log(res.data, "代理端口管理下级用户所有数据")
 
     if (res.ok) {
       tableData.value = res.data.records || []
       total.value = res.data.total || 0
     } else {
-      ElMessage.error('加载数据失败，请稍后重试')
+      ElMessage.error(res.message || '加载数据失败，请稍后重试')
     }
   } catch (error) {
     ElMessage.error('加载数据失败，请稍后重试')
-    console.error('请求失败', error)              
+    console.error('请求失败', error)
   } finally {
     loading.value = false
   }
 }
+
 // ===========回码率转换
 function formatRate(value) {
   if (value == null || isNaN(value)) return '--'

@@ -50,38 +50,47 @@
 </el-form-item>
     <!-- todo编辑暂未实现 -->
 
-      <el-form-item label="项目价格">
-        <div class="prices">
-  <div
-  class="price-row"
-  v-for="(p, idx) in prices"
-  :key="`${p.projectId}-${idx}`"
->
-  <!-- 项目 ID -->
-  <el-input
-    v-model="p.projectId"
-    placeholder="项目ID 如 xhs/14"
-    style="width: 180px"
-  />
-  <!-- 线路 ID -->
-  <el-input
-    v-model.number="p.lineId"
-    placeholder="线路ID 如 22"
-    type="number"
-    style="width: 140px"
-  />
-  <!-- 价格 -->
-  <el-input
-    v-model.number="p.price"
-    placeholder="价格 如 0.6"
-    type="number"
-    style="width: 140px"
-  />
-  <el-button type="danger" link @click="removePrice(idx)">删除</el-button>
-</div>
-          <el-button type="primary" link @click="addPrice">+ 添加项目价格</el-button>
-        </div>
-      </el-form-item>
+  <el-form-item label="项目价格">
+  <div class="prices">
+    <!-- ✅ 表头说明 -->
+    <div class="price-header">
+      <span style="width: 180px; font-weight: 600;">项目ID</span>
+      <span style="width: 140px; font-weight: 600;">线路ID</span>
+      <span style="width: 140px; font-weight: 600;">价格</span>
+      <span style="width: 60px; font-weight: 600;">操作</span>
+    </div>
+
+    <!-- ✅ 动态输入行 -->
+    <div
+      class="price-row"
+      v-for="(p, idx) in prices"
+      :key="`${p.projectId}-${idx}`"
+    >
+      <el-input
+        v-model="p.projectId"
+        placeholder="项目ID 如 14"
+        style="width: 180px"
+      />
+      <el-input
+        v-model.number="p.lineId"
+        placeholder="线路ID 如 2"
+        type="number"
+        style="width: 140px"
+      />
+      <el-input
+        v-model.number="p.price"
+        placeholder="价格 如 0.6"
+        type="number"
+        style="width: 140px"
+      />
+      <el-button type="danger" link @click="removePrice(idx)">删除</el-button>
+    </div>
+
+    <!-- ✅ 添加按钮 -->
+    <el-button type="primary" link @click="addPrice">+ 添加项目价格</el-button>
+  </div>
+</el-form-item>
+
     </el-form>
 
     <template #footer>
@@ -243,4 +252,26 @@ function onUpdate(val) {
 <style scoped>
 .prices { display: flex; flex-direction: column; gap: 8px; }
 .price-row { display: flex; gap: 8px; align-items: center; }
+.prices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.price-header,
+.price-row {
+  display: grid;
+  grid-template-columns: 180px 140px 140px 60px; /* ✅ 四列统一宽度 */
+  align-items: center;
+  gap: 8px;
+}
+
+.price-header {
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
+
+
 </style>

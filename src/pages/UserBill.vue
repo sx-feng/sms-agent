@@ -6,6 +6,12 @@
            <el-button class="back-btn" @click="goBack" size="small">⬅ 返回</el-button>
           <span>下级账单明细</span>
           <div class="filters">
+              <el-input
+    v-model="userName"
+    placeholder="输入代理用户名"
+    style="width: 160px;"
+    clearable
+  />
             <el-date-picker
               v-model="dateRange"
               type="daterange"
@@ -78,7 +84,7 @@ function goBack() {
     router.push('/reseller/sub-users') // 无历史记录时回到下级管理页
   }
 }
-
+const userName = ref(localStorage.getItem('userName') || '')
 // 模拟分页账单数据
 const billList = ref([])
 const total = ref(0)
@@ -92,7 +98,7 @@ const fetchBills = async () => {
     page: currentPage.value,
     size: pageSize.value,
   }
-
+  if (userName.value) params.userName = userName.value.trim()
   // 如果选择了用户ID或日期范围，就带上参数
   if (searchUser.value) params.targetUserId = Number(searchUser.value)
   if (dateRange.value && dateRange.value.length === 2) {

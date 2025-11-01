@@ -56,7 +56,12 @@
                 <el-table-column prop="lineId" label="线路ID" width="90" align="center" />
                 <el-table-column prop="totalRequests" label="取号数量" width="110" align="center" />
                 <el-table-column prop="successCount" label="取码数量" width="110" align="center" />
-                <el-table-column prop="successRate" label="回码率 (%)" width="110" align="center" />
+<el-table-column label="回码率 (%)" width="110" align="center">
+  <template #default="{ row }">
+    {{ formatRate(row.successRate) }}
+  </template>
+</el-table-column>
+
                 <el-table-column prop="totalRevenue" label="总收入 (¥)" width="120" align="center" />
                 <el-table-column prop="totalCost" label="总成本 (¥)" width="120" align="center" />
                 <el-table-column prop="totalProfit" label="总盈利 (¥)" width="120" align="center" />
@@ -70,7 +75,12 @@
         <el-table-column prop="lineCount" label="线路数量" width="100" align="center" />
         <el-table-column prop="totalRequests" label="总取号数" width="120" align="center" />
         <el-table-column prop="successCount" label="成功取码数" width="120" align="center" />
-        <el-table-column prop="successRate" label="回码率 (%)" width="110" align="center" />
+      <el-table-column label="回码率 (%)" width="110" align="center">
+  <template #default="{ row }">
+    {{ formatRate(row.successRate) }}
+  </template>
+</el-table-column>
+
         <el-table-column prop="totalRevenue" label="总收入 (¥)" width="120" align="center" />
         <el-table-column prop="totalCost" label="总成本 (¥)" width="120" align="center" />
         <el-table-column prop="totalProfit" label="总盈利 (¥)" width="120" align="center" />
@@ -147,6 +157,10 @@ async function loadReport() {
 function handlePageChange(page) {
   pagination.value.current = page
   loadReport()
+}
+function formatRate(value) {
+  if (value == null || isNaN(value)) return '--'
+  return `${Number(value).toFixed(2)}%`
 }
 
 onMounted(() => loadReport())
