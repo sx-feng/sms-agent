@@ -1,11 +1,22 @@
-<template>
+﻿<template>
   <div class="price-config">
     <el-card>
       <template #header>
         <div class="flex-between">
           <el-button class="back-btn" @click="goBack" size="small">⬅ 返回</el-button>
           <span>下级项目价格配置</span>
-          <el-button type="primary" @click="fetchData">刷新</el-button>
+           <div style="display: flex; align-items: center; gap: 10px;">
+      <el-input
+        v-model="searchUserName"
+        placeholder="输入用户名查询"
+        size="small"
+        style="width: 200px"
+        clearable
+        @keyup.enter="fetchData"
+      />
+      <el-button type="primary" @click="fetchData" size="small">查询</el-button>
+      <el-button type="success" @click="fetchData" size="small">刷新</el-button>
+    </div>
         </div>
       </template>
 
@@ -90,7 +101,7 @@ import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 // [注意] 确保这里的 API 函数名称是正确的
 import { getAgentProjects, updateProjectConfig } from '@/api/agent'
-
+const searchUserName = ref('') 
 const router = useRouter()
 const loading = ref(false)
 const projects = ref([])
@@ -114,34 +125,36 @@ function goBack() {
 const fetchData = async () => {
   loading.value = true
   try {
-    // 传递分页参数
+    // ✅ 基础分页参数
     const params = {
       page: pagination.page,
-      size: pagination.size,
+      size: pagination.size
     }
-    // [注意] 根据你的 API 定义，这里我使用了 getAgentProjects
-    const res = await getAgentProjects(params) 
-    
-    // 后端返回的数据结构是 { code, message, data: { records, total, ... } }
+
+    // ✅ 仅当用户输入了内容时才附加 userName 参数
+    const keyword = searchUserName.value?.trim()
+    if (keyword && keyword.length > 0) {
+      params.userName = keyword
+    }
+
+    // ✅ 请求接口
+    const res = await getAgentProjects(params)
+
     if (res.code === 200 && res.data) {
-      // 二维数据转一维，这个逻辑是正确的，保持不变
+      // 展开数据逻辑保持不变
       projects.value = res.data.records.flatMap(user => {
-        // 如果用户没有价格配置，也返回一条用户信息，让表格显示用户名，但后续列为空
         if (!Array.isArray(user.projectPrices) || user.projectPrices.length === 0) {
           return [{
             userId: user.userId,
             userName: user.userName,
           }]
         }
-        // 正常展开用户的价格配置
         return user.projectPrices.map(p => ({
           userId: user.userId,
           userName: user.userName,
           ...p
         }))
       })
-      
-      // 更新总数据条数
       pagination.total = res.data.total
     } else {
       ElMessage.error(res.message || '获取项目配置失败')
@@ -153,6 +166,7 @@ const fetchData = async () => {
     loading.value = false
   }
 }
+
 
 // [新增] 3. 处理每页显示数量变化的函数
 const handleSizeChange = (newSize) => {

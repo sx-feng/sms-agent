@@ -16,6 +16,7 @@ const router = createRouter({
 
     // 快捷入口对应的路由 👇
     { path: '/reseller/users', component: SubUsers, meta: { title: '下级管理' } },
+
     { path: '/reseller/projects', component: PriceConfig, meta: { title: '项目价格配置' } },
     { path: '/reseller/userbill', component: UserBill, meta: { title: '账单记录' } },
   ]
