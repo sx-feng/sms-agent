@@ -1,15 +1,33 @@
 <template>
   <div class="dashboard-page">
     <!-- 顶部条 -->
-    <div class="top-bar">
-      <div class="left-title">💼 代理控制面板</div>
-      <div class="right-actions">
-        <el-button type="danger" size="small" @click="confirmLogout">退出登录</el-button>
-      </div>
-    </div>
+<div class="top-bar">
+  <div class="left-title">💼 代理控制面板</div>
+
+  <div class="right-actions">
+    <el-button
+      type="primary"
+      size="small"
+      plain
+      @click="handleUser"
+    >
+      用户端入口
+    </el-button>
+
+    <el-button
+      type="danger"
+      size="small"
+      @click="confirmLogout"
+    >
+      退出登录
+    </el-button>
+  </div>
+</div>
+
 
     <!-- 通知栏 -->
     <NoticeBar />
+
 
     <!-- 仪表盘统计 -->
     <div class="stat-section">
@@ -88,7 +106,11 @@ function confirmLogout() {
 }
 
 const stats = ref([])
-
+const handleUser = () => {
+  if (typeof window !== 'undefined') {
+    window.location.href = 'https://www.huikecode.com/'
+  }
+}
 async function loadDashboard() {
   try {
     const res = await getAgentDashboard()
@@ -137,8 +159,10 @@ onMounted(() => loadDashboard())
 }
 .right-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  align-items: center;
 }
+
 
 /* ✅ 中间仪表盘区（改进） */
 .stat-section {

@@ -76,7 +76,7 @@
         @current-change="getUserList"
       />
     </div>
-<EditDialog v-model="addDialogVisible" />
+<EditDialog v-model="addDialogVisible"    @updated="getUserList"/>
     <!-- 弹窗组件（仅在显示时渲染，避免 Teleport 异常） -->
     <UserEditDialog v-if="editDialogVisible" v-model="editDialogVisible" :user="currentUser" @updated="getUserList" />
     <RecordDialog v-if="recordDialogVisible" v-model="recordDialogVisible" :user="currentUser" />
@@ -85,6 +85,7 @@
   v-model="rechargeDialogVisible"
   :user-id-prop="currentUser?.id"
   @success="getUserList"
+  @updated="getUserList"
 />
 
   </div>
