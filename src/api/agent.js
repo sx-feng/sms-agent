@@ -80,3 +80,20 @@ export const getAgentReportData = (params = {}) => {
 // 查询代理下级用户的取号记录（支持多条件筛选）
 export const getAgentSubordinateNumberRecords = (data) =>
   request(1, '/api/agent/subordinate-number-records', data)
+// ==================== 价格模板管理 ====================
+
+// 获取自己创建的所有价格模板（GET）
+export const getAgentPriceTemplates = () =>
+  request(0, '/api/agent/price-templates/get')
+
+// 创建新的价格模板（POST）
+export const addAgentPriceTemplate = (data) =>
+  request(1, '/api/agent/price-templates/add', data)
+
+// 更新已有价格模板（POST）
+export const updateAgentPriceTemplate = (templateId, data) =>
+  request(1, `/api/agent/price-templates/update/${templateId}`, data)
+
+// 删除价格模板（GET）
+export const deleteAgentPriceTemplate = (templateId) =>
+  request(0, `/api/agent/price-templates/delete/${templateId}`)

@@ -8,6 +8,7 @@ const PriceConfig = () => import('@/pages/PriceConfig.vue')
 const UserBill = () => import('@/pages/UserBill.vue')
 const ReportPage = () => import('@/pages/ReportPage.vue') // ✅ 新增引入
 const UserNumberRecords = () => import('@/pages/UserNumberRecords.vue')
+const AgentPriceTemplate = () => import('@/pages/AgentPriceTemplate.vue')
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -17,7 +18,7 @@ const router = createRouter({
 
     // 快捷入口对应的路由 👇
     { path: '/reseller/users', component: SubUsers, meta: { title: '下级管理' } },
-
+{ path: '/reseller/templates', component: AgentPriceTemplate, meta: { title: '价格模板管理' } },
     // ✅ 新增路径 /reseller/report
     { path: '/reseller/report', component: ReportPage, meta: { title: '数据报表' } },
 { path: '/reseller/records', component: UserNumberRecords, meta: { title: '下级用户取号记录' } },
