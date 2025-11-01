@@ -92,9 +92,10 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { createAgentUser, updateAgentUser } from '@/api/agent'
+import { getAgentProjectPrice } from '@/api/agent.projectPrice'
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
@@ -117,6 +118,21 @@ const prices = ref([]) // [{ projectId, price }]
 const saving = ref(false)
 // eslint-disable-next-line no-unused-vars
 const isEdit = computed(() => !!props.user)
+
+async function loadAgentProjectPrices() {
+  try {
+    const res = await getAgentProjectPrice()
+    if (!res.ok) return
+    const list = Array.isArray(res.data) ? res.data : []
+    prices.value = list.map((item) => ({
+      projectId: String(item.projectId ?? ''),
+      lineId: item.lineId !== undefined && item.lineId !== null && item.lineId !== '' ? Number(item.lineId) : undefined,
+      price: Number(item.agentPrice ?? 0)
+    }))
+  } catch (_) {
+    // 静默失败，保持空列表
+  }
+}
 
 watch(
   () => props.user,
@@ -151,10 +167,18 @@ watch(
          totalCodeRate: 0,
           age: undefined, 
           projectPrices: {} }
+      // 新增下级时，预填充为当前代理的项目价格
+      loadAgentProjectPrices()
     }
   },
   { immediate: true }
 )
+
+onMounted(() => {
+  if (!props.user) {
+    loadAgentProjectPrices()
+  }
+})
 
 // 添加一行
 function addPrice() {
