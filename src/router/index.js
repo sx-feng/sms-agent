@@ -7,7 +7,7 @@ const SubUsers = () => import('@/pages/SubUsers.vue')
 const PriceConfig = () => import('@/pages/PriceConfig.vue')
 const UserBill = () => import('@/pages/UserBill.vue')
 const ReportPage = () => import('@/pages/ReportPage.vue') // ✅ 新增引入
-
+const UserNumberRecords = () => import('@/pages/UserNumberRecords.vue')
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -20,7 +20,7 @@ const router = createRouter({
 
     // ✅ 新增路径 /reseller/report
     { path: '/reseller/report', component: ReportPage, meta: { title: '数据报表' } },
-
+{ path: '/reseller/records', component: UserNumberRecords, meta: { title: '下级用户取号记录' } },
     { path: '/reseller/projects', component: PriceConfig, meta: { title: '项目价格配置' } },
     { path: '/reseller/userbill', component: UserBill, meta: { title: '账单记录' } },
   ]
