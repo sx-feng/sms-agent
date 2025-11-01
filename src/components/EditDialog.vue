@@ -261,7 +261,7 @@ async function save() {
       ElMessage.error(res.message || '保存失败')
       return
     }
-    ElMessage.success('保存成功')
+    ElMessage.success('保存成功，请刷新')
     emit('update:modelValue', false)
     emit('updated', payload)
   } catch {
