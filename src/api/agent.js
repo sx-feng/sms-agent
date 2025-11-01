@@ -63,3 +63,17 @@ export function updateProjectConfig(data) {
     }
   )
 }
+// ==================== 数据报表 ====================
+
+// 获取代理端数据报表（GET）
+// 返回各项目的汇总与线路明细
+export const getAgentReportData = (params = {}) => {
+  const query = {
+    current: params.current ?? 1,
+    size: params.size ?? 10,
+    projectName: params.projectName || '',
+    projectId: params.projectId || '',
+    lineId: params.lineId || ''
+  }
+  return request(1, '/api/agent/get/data', query)
+}

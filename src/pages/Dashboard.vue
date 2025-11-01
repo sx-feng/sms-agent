@@ -62,10 +62,11 @@ const router = useRouter()
 
 const quickBtns = ref([
   { label: '下级管理', path: '/reseller/users' },
-  { label: '数据报表', path: '/reseller/recharge' },
+  { label: '数据报表', path: '/reseller/report' }, // ✅ 改成新路径
   { label: '项目价格配置', path: '/reseller/projects' },
   { label: '账单记录', path: '/reseller/userbill' }
 ])
+
 
 function confirmLogout() {
   ElMessageBox.confirm('确定要退出登录吗？', '退出确认', {
