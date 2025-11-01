@@ -32,14 +32,6 @@
           :disabled="isEdit"
         />
       </el-form-item>
-
-      <!-- <el-form-item label="取号总数">
-        <el-input v-model.number="form.totalGetCount" placeholder="请输入取号总数" type="number" />
-      </el-form-item>
-
-      <el-form-item label="回码率(%)">
-        <el-input v-model.number="form.totalCodeRate" placeholder="请输入回码率，如 81" type="number" />
-      </el-form-item> -->
 <el-form-item label="是否代理" >
   <el-switch
     v-model="form.isAgent"
@@ -48,7 +40,23 @@
     inactive-text="否"
   />
 </el-form-item>
-    <!-- todo编辑暂未实现 -->
+<el-form-item label="选择模板">
+  <el-select
+    v-model="selectedTemplateId"
+    placeholder="请选择一个价格模板"
+    clearable
+    filterable
+    @change="applyTemplate"
+    style="width: 400px"
+  >
+    <el-option
+      v-for="tpl in templates"
+      :key="tpl.id"
+      :label="tpl.name"
+      :value="tpl.id"
+    />
+  </el-select>
+</el-form-item>
 
   <el-form-item label="项目价格">
   <div class="prices">
@@ -70,12 +78,14 @@
         v-model="p.projectId"
         placeholder="项目ID 如 14"
         style="width: 180px"
+        disabled
       />
       <el-input
         v-model.number="p.lineId"
         placeholder="线路ID 如 2"
         type="number"
         style="width: 140px"
+        disabled
       />
       <el-input
         v-model.number="p.price"
@@ -87,7 +97,7 @@
     </div>
 
     <!-- ✅ 添加按钮 -->
-    <el-button type="primary" link @click="addPrice">+ 添加项目价格</el-button>
+    <!-- <el-button type="primary" link @click="addPrice">+ 添加项目价格</el-button> -->
   </div>
 </el-form-item>
 
@@ -103,9 +113,10 @@
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { createAgentUser, updateAgentUser } from '@/api/agent'
+import { createAgentUser, updateAgentUser, getAgentPriceTemplates } from '@/api/agent'
 import { getAgentProjectPrice } from '@/api/agent.projectPrice'
-
+const templates = ref([])              // 存储所有模板
+const selectedTemplateId = ref(null)   // 当前选择的模板
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
   user: { type: Object, default: null }
@@ -182,30 +193,46 @@ watch(
   },
   { immediate: true }
 )
+async function loadTemplates() {
+  try {
+    const res = await getAgentPriceTemplates()
+    if (res.code === 200) {
+      templates.value = res.data || []
+    }
+  } catch (e) {
+    console.error('加载模板失败', e)
+  }
+}
 
 onMounted(() => {
   if (!props.user) {
     loadAgentProjectPrices()
   }
+  loadTemplates()
 })
 
 // 添加一行
-function addPrice() {
-  prices.value.push({ projectId: '', lineId: undefined, price: 0 })
-}
+// function addPrice() {
+//   prices.value.push({ projectId: '', lineId: undefined, price: 0 })
+// }
 function removePrice(idx) {
   prices.value.splice(idx, 1)
 }
+// 价格匹配
+function applyTemplate(templateId) {
+  const tpl = templates.value.find(t => t.id === templateId)
+  if (!tpl) return
 
-// function buildPriceArray() {
-//   return prices.value
-//     .filter(p => p.projectId != null && p.projectId !== '' && p.price != null)
-//     .map(p => ({
-//       projectId: String(p.projectId).trim(),
-//       lineId: p.lineId != null ? Number(p.lineId) : undefined,
-//       price: Number(p.price)
-//     }))
-// }
+  // 遍历模板中的项目项，映射到下级价格列表
+  prices.value = tpl.items.map(item => ({
+    projectId: String(item.projectId ?? ''),
+    lineId: Number(item.lineId ?? 0),
+    price: Number(item.price ?? 0) // ✅ 模板售价
+  }))
+
+  ElMessage.success(`已应用模板「${tpl.name}」，价格已自动匹配`)
+}
+// ==========
 async function save() {
   const isEdit = !!(props.user && (props.user.userId || props.user.id))
   const payload = {
