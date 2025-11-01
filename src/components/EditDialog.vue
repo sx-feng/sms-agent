@@ -235,14 +235,20 @@ function applyTemplate(templateId) {
 // ==========
 async function save() {
   const isEdit = !!(props.user && (props.user.userId || props.user.id))
+    const projectPrices = prices.value.map(p => ({
+    projectId: Number(p.projectId),
+    lineId: Number(p.lineId),
+    price: Number(p.price)
+  }))
   const payload = {
    username: form.value.username,
     password: form.value.password,
   isAgent: form.value.isAgent,   // ✅ 布尔
-    status: Number(form.value.status) // ✅ 数字
+    status: Number(form.value.status) ,// ✅ 数字
     // totalGetCount: form.value.totalGetCount,
     // totalCodeRate: form.value.totalCodeRate,
     // projectPrices: buildPriceArray()
+    projectPrices   
   
 }
 
