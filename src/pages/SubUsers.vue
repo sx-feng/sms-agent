@@ -71,6 +71,13 @@
     <!-- 弹窗组件（仅在显示时渲染，避免 Teleport 异常） -->
     <UserEditDialog v-if="editDialogVisible" v-model="editDialogVisible" :user="currentUser" @updated="getUserList" />
     <RecordDialog v-if="recordDialogVisible" v-model="recordDialogVisible" :user="currentUser" />
+    <UserRecharge
+  v-if="rechargeDialogVisible"
+  v-model="rechargeDialogVisible"
+  :user-id-prop="currentUser?.id"
+  @success="getUserList"
+/>
+
   </div>
 </template>
 
@@ -85,6 +92,8 @@ import EditDialog from '@/components/EditDialog.vue'
 
 // eslint-disable-next-line no-unused-vars
 import { listAgentUsers, createAgentUser, updateAgentUser, rechargeAgentUser, deductAgentUser } from '@/api/agent'
+import UserRecharge from '../components/UserRecharge.vue'
+const rechargeDialogVisible = ref(false)
 
 // 数据加载
 const loading = ref(false)
@@ -207,8 +216,10 @@ function openRecordDialog(row) {
 }
 // 充值页面
 function goRecharge(row) {
-  router.push({ path: '/reseller/recharge', query: { userId: row.id } }) // ✅ 这里
+  currentUser.value = row
+  rechargeDialogVisible.value = true
 }
+
 </script>
 
 <style scoped>

@@ -62,7 +62,7 @@ const router = useRouter()
 
 const quickBtns = ref([
   { label: '下级管理', path: '/reseller/users' },
-  // { label: '充值 / 扣款', path: '/reseller/recharge' },
+  { label: '数据报表', path: '/reseller/recharge' },
   { label: '项目价格配置', path: '/reseller/projects' },
   { label: '账单记录', path: '/reseller/userbill' }
 ])
@@ -136,50 +136,54 @@ onMounted(() => loadDashboard())
   gap: 8px;
 }
 
-/* 统计卡片区 */
+/* ✅ 中间仪表盘区（改进） */
 .stat-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* 卡片更宽 */
+  gap: 30px;
+  padding: 10px 0;
 }
 .stat-item {
-  border-radius: 16px;
+  border-radius: 18px;
   transition: all 0.3s ease;
+  padding: 26px 28px;
+  height: 140px; /* 增加高度 */
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 .stat-item:hover {
   transform: translateY(-4px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
 }
 .stat-content {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 18px;
+  height: 100%;
 }
 .icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 12px;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 24px;
+  font-size: 28px;
+  flex-shrink: 0;
 }
 .icon-0 { background: linear-gradient(45deg, #409eff, #66b1ff); }
 .icon-1 { background: linear-gradient(45deg, #67c23a, #85ce61); }
 .icon-2 { background: linear-gradient(45deg, #e6a23c, #ebb563); }
 .icon-3 { background: linear-gradient(45deg, #f56c6c, #f78989); }
-.stat-text {
-  flex: 1;
-}
 .stat-title {
-  font-size: 14px;
+  font-size: 15px;
   color: #666;
 }
 .stat-value {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 700;
   color: #333;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 /* 功能入口区 */
