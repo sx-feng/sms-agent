@@ -81,14 +81,17 @@
 
       <!-- 分页 -->
       <div class="pagination">
-        <el-pagination
-          background
-          layout="total, prev, pager, next, jumper"
-          :total="pagination.total"
-          :page-size="pagination.size"
-          :current-page="pagination.page"
-          @current-change="handlePageChange"
-        />
+   <el-pagination
+  background
+  layout="total, sizes, prev, pager, next, jumper"
+  :total="pagination.total"
+  :page-size="pagination.size"
+  :current-page="pagination.page"
+  :page-sizes="[10, 20, 50, 100]"   
+  @current-change="handlePageChange"
+  @size-change="handleSizeChange"  
+/>
+
       </div>
     </el-card>
   </div>
@@ -109,6 +112,17 @@ const pagination = reactive({
   size: 10,
   total: 0
 })
+
+const handlePageChange = (page) => {
+  pagination.page = page
+  loadRecords()
+}
+
+const handleSizeChange = (size) => {
+  pagination.size = size
+  pagination.page = 1
+  loadRecords()
+}
 
 const filters = reactive({
   projectId: '',
@@ -155,11 +169,6 @@ const resetFilters = () => {
   filters.lineId = ''
   filters.userName = ''
   handleSearch()
-}
-
-const handlePageChange = (page) => {
-  pagination.page = page
-  loadRecords()
 }
 
 onMounted(loadRecords)
