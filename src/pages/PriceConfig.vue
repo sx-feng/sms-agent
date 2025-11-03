@@ -96,7 +96,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue' // reactive 可以用于组织分页数据
+import { ref, reactive, onMounted } from 'vue' 
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 // [注意] 确保这里的 API 函数名称是正确的
@@ -219,8 +219,10 @@ const saveProjectConfig = async () => {
   }
 }
 
-// 页面加载时首次获取数据
-fetchData()
+// 3. 使用 onMounted 生命周期钩子来调用 fetchData
+onMounted(() => {
+  fetchData()
+})
 </script>
 
 <style scoped>

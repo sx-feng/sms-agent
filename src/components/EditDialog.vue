@@ -7,12 +7,10 @@
     :close-on-click-modal="false"
   >
     <el-form :model="form" label-width="120px">
-      <el-form-item label="用户ID">
+      <!-- <el-form-item label="用户ID">
         <el-input v-model="form.userId" placeholder="自动生成/不可修改" disabled />
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-switch v-model="form.status" active-text="启用" inactive-text="禁用" />
-      </el-form-item>
+      </el-form-item> -->
+      
             <!-- 用户名 -->
       <el-form-item label="用户名">
         <el-input
@@ -27,8 +25,7 @@
         <el-input
           v-model="form.password"
           placeholder="请输入密码"
-          :show-password="true"
-          type="password"
+
           :disabled="isEdit"
         />
       </el-form-item>
@@ -40,6 +37,9 @@
     inactive-text="否"
   />
 </el-form-item>
+<el-form-item label="状态">
+        <el-switch v-model="form.status" active-text="启用" inactive-text="禁用" />
+      </el-form-item>
 <el-form-item label="选择模板">
   <el-select
     v-model="selectedTemplateId"
