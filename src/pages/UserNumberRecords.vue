@@ -37,6 +37,15 @@
           style="width: 180px"
           clearable
         />
+          <el-date-picker
+    v-model="filters.dateRange"
+    type="daterange"
+    range-separator="至"
+    start-placeholder="开始日期"
+    end-placeholder="结束日期"
+    size="small"
+    style="width: 280px"
+  />
         <el-button type="primary" size="small" @click="handleSearch">查询</el-button>
         <el-button size="small" @click="resetFilters">重置</el-button>
       </div>
@@ -57,9 +66,9 @@
 
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag type="success" v-if="row.status === 1">成功</el-tag>
-            <el-tag type="danger" v-else-if="row.status === 3">失败</el-tag>
-            <el-tag type="warning" v-else>进行中</el-tag>
+            <el-tag type="success" v-if="row.status === 2">成功</el-tag>
+            <el-tag type="warning" v-else-if="row.status === 1">进行中</el-tag>
+            <el-tag type="danger" v-else>失败</el-tag>
           </template>
         </el-table-column>
 
@@ -104,7 +113,8 @@ const pagination = reactive({
 const filters = reactive({
   projectId: '',
   lineId: '',
-  userName: ''
+  userName: '',
+   dateRange: []
 })
 
 const goBack = () => router.back()
@@ -117,7 +127,9 @@ const loadRecords = async () => {
       size: pagination.size,
       projectId: filters.projectId,
       lineId: filters.lineId,
-      userName: filters.userName
+      userName: filters.userName,
+       startTime: filters.dateRange?.[0] || '',
+  endTime: filters.dateRange?.[1] || ''
     })
     if (res.code === 200 && res.data) {
       records.value = res.data.records || []

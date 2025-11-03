@@ -14,29 +14,43 @@
     </div>
 
     <!-- 筛选区域 -->
-    <div class="filter-bar">
-      <el-input
-        v-model="filters.projectName"
-        placeholder="项目名称"
-        clearable
-        size="small"
-        style="width: 180px"
-      />
-      <el-input
-        v-model="filters.projectId"
-        placeholder="项目ID"
-        clearable
-        size="small"
-        style="width: 160px"
-      />
-      <el-input-number
-        v-model="filters.lineId"
-        placeholder="线路ID"
-        size="small"
-        style="width: 140px"
-      />
-      <el-button type="success" size="small" @click="loadReport">查询</el-button>
-    </div>
+  <div class="filter-bar">
+  <el-input
+    v-model="filters.projectName"
+    placeholder="项目名称"
+    clearable
+    size="small"
+    style="width: 180px"
+  />
+  <el-input
+    v-model="filters.projectId"
+    placeholder="项目ID"
+    clearable
+    size="small"
+    style="width: 160px"
+  />
+  <el-input-number
+    v-model="filters.lineId"
+    placeholder="线路ID"
+    size="small"
+    style="width: 140px"
+  />
+
+  <!-- ✅ 新增时间选择器 -->
+  <el-date-picker
+    v-model="filters.dateRange"
+    type="datetimerange"
+    range-separator="至"
+    start-placeholder="开始时间"
+    end-placeholder="结束时间"
+    size="small"
+    style="width: 320px"
+  />
+
+  <el-button type="success" size="small" @click="loadReport">查询</el-button>
+  <el-button size="small" @click="resetFilters">重置</el-button>
+</div>
+
 
     <!-- 报表主体 -->
     <el-card class="table-card" shadow="hover">
@@ -115,7 +129,8 @@ const reportData = ref([])
 const filters = ref({
   projectName: '',
   projectId: '',
-  lineId: null
+  lineId: null,
+   dateRange: [] 
 })
 
 // ✅ 分页数据
@@ -137,7 +152,9 @@ async function loadReport() {
       size: pagination.value.size,
       projectName: filters.value.projectName,
       projectId: filters.value.projectId,
-      lineId: filters.value.lineId
+      lineId: filters.value.lineId,
+        startTime: filters.value.dateRange?.[0] || '',
+  endTime: filters.value.dateRange?.[1] || ''
     })
 
     if (res.code === 200 && res.data) {
