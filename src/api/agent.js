@@ -73,10 +73,13 @@ export const getAgentReportData = (params = {}) => {
     size: params.size ?? 10,
     projectName: params.projectName || '',
     projectId: params.projectId || '',
-    lineId: params.lineId || ''
+    lineId: params.lineId || '',
+    startTime: params.startTime || '',   // ✅ 新增
+    endTime: params.endTime || ''        // ✅ 新增
   }
   return request(1, '/api/agent/get/data', query)
 }
+
 // 查询代理下级用户的取号记录（支持多条件筛选）
 export const getAgentSubordinateNumberRecords = (data) =>
   request(1, '/api/agent/subordinate-number-records', data)

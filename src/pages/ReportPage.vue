@@ -37,15 +37,18 @@
   />
 
   <!-- ✅ 新增时间选择器 -->
-  <el-date-picker
-    v-model="filters.dateRange"
-    type="datetimerange"
-    range-separator="至"
-    start-placeholder="开始时间"
-    end-placeholder="结束时间"
-    size="small"
-    style="width: 320px"
-  />
+<el-date-picker
+  v-model="filters.dateRange"
+  type="datetimerange"
+  value-format="YYYY-MM-DD HH:mm:ss"
+  format="YYYY-MM-DD HH:mm:ss"
+  range-separator="至"
+  start-placeholder="开始时间"
+  end-placeholder="结束时间"
+  size="small"
+  style="width: 320px"
+/>
+
 
   <el-button type="success" size="small" @click="loadReport">查询</el-button>
   <el-button size="small" @click="resetFilters">重置</el-button>
