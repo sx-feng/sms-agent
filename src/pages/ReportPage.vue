@@ -51,7 +51,7 @@
 
 
   <el-button type="success" size="small" @click="loadReport">查询</el-button>
-  <el-button size="small" @click="resetFilters">重置</el-button>
+
 </div>
 
 
