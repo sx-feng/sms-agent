@@ -26,3 +26,6 @@ import { request } from '@/utils/request'
 export const getAgentProjectPrice = () =>
   request(0, '/api/agent/project/price', {}, true)
 
+
+
+

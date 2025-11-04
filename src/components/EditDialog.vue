@@ -113,8 +113,8 @@
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { createAgentUser, updateAgentUser, getAgentPriceTemplates } from '@/api/agent'
-import { getAgentProjectPrice } from '@/api/agent.projectPrice'
+import { createAgentUser, updateAgentUser, getAgentPriceTemplates ,getProjectList} from '@/api/agent'
+// import { getAgentProjectPrice} from '@/api/agent.projectPrice'
 const templates = ref([])              // 存储所有模板
 const selectedTemplateId = ref(null)   // 当前选择的模板
 const props = defineProps({
@@ -141,13 +141,14 @@ const isEdit = computed(() => !!props.user)
 
 async function loadAgentProjectPrices() {
   try {
-    const res = await getAgentProjectPrice()
+    // const res = await getAgentProjectPrice()
+    const res = await getProjectList({ pageSize: -1 });
     if (!res.ok) return
-    const list = Array.isArray(res.data) ? res.data : []
+    const list = Array.isArray(res.data.records) ? res.data.records : []
     prices.value = list.map((item) => ({
       projectId: String(item.projectId ?? ''),
       lineId: item.lineId !== undefined && item.lineId !== null && item.lineId !== '' ? Number(item.lineId) : undefined,
-      price: Number(item.agentPrice ?? 0)
+      price: Number(item.priceMax ?? 0)
     }))
   } catch (_) {
     // 静默失败，保持空列表

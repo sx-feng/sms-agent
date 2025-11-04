@@ -100,3 +100,7 @@ export const updateAgentPriceTemplate = (templateId, data) =>
 // 删除价格模板（GET）
 export const deleteAgentPriceTemplate = (templateId) =>
   request(0, `/api/agent/price-templates/delete/${templateId}`)
+
+
+// 分页查询所有项目列表 
+export const getProjectList = (params) => request(0, '/api/project/find/all', params, true)
