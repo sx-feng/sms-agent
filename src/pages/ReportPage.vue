@@ -128,15 +128,15 @@ const router = useRouter()
 const loading = ref(false)
 const reportData = ref([])
 
-// ✅ 查询条件
+// 查询条件
 const filters = ref({
   projectName: '',
   projectId: '',
   lineId: null,
-   dateRange: [] 
+  dateRange: [] // 初始为空数组
 })
 
-// ✅ 分页数据
+// 分页数据
 const pagination = ref({
   current: 1,
   size: 10,
@@ -146,19 +146,28 @@ const pagination = ref({
 // 返回上一页
 const goBack = () => router.back()
 
-// 加载数据
+// ✅ 修改点: 调整 loadReport 函数逻辑
 async function loadReport() {
   try {
     loading.value = true
-    const res = await getAgentReportData({
+
+    // 1. 构建基础查询参数
+    const params = {
       current: pagination.value.current,
       size: pagination.value.size,
       projectName: filters.value.projectName,
       projectId: filters.value.projectId,
       lineId: filters.value.lineId,
-        startTime: filters.value.dateRange?.[0] || '',
-  endTime: filters.value.dateRange?.[1] || ''
-    })
+    }
+
+    // 2. 仅当用户选择了时间范围时，才添加时间参数
+    if (filters.value.dateRange && filters.value.dateRange.length === 2) {
+      params.startTime = filters.value.dateRange[0]
+      params.endTime = filters.value.dateRange[1]
+    }
+
+    // 3. 发起请求
+    const res = await getAgentReportData(params)
 
     if (res.code === 200 && res.data) {
       reportData.value = res.data.records || res.data || []
@@ -178,12 +187,17 @@ function handlePageChange(page) {
   pagination.value.current = page
   loadReport()
 }
+
+// 格式化比率
 function formatRate(value) {
   if (value == null || isNaN(value)) return '--'
   return `${Number(value).toFixed(2)}%`
 }
 
-onMounted(() => loadReport())
+onMounted(() => {
+  // 页面加载时调用，此时 filters.value.dateRange 是空数组，不会传递时间参数
+  loadReport()
+})
 </script>
 
 <style scoped>
