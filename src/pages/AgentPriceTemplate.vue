@@ -50,7 +50,9 @@
               <span style="width: 90px;">项目ID</span>
               <span style="width: 140px;">项目名称</span>
               <span style="width: 80px;">线路ID</span>
-              <span style="width: 100px;">成本价</span>
+              <span style="width: 80px;">最高价</span>
+              <span style="width: 80px;">最低价</span>
+              <!-- <span style="width: 100px;">成本价</span> -->
               <span style="width: 120px;">售价</span>
               <span style="width: 60px;">操作</span>
             </div>
@@ -76,12 +78,27 @@
                 type="number"
                 disabled
               />
+              <!-- 最高价 -->
+               <el-input
+                v-model.number="item.priceMax"
+                placeholder="最高价"
+                style="width: 80px;"
+                type="number"
+                disabled
+              />
               <el-input
+                v-model.number="item.priceMin"
+                placeholder="最低价"
+                style="width: 80px;"
+                type="number"
+                disabled
+              />
+              <!-- <el-input
                 v-model.number="item.costPrice"
                 disabled
                 style="width: 100px;"
                 placeholder="成本价"
-              />
+              /> -->
               <el-input-number
                 v-model.number="item.price"
                 :min="0"
@@ -113,7 +130,8 @@ import {
   getAgentPriceTemplates,
   addAgentPriceTemplate,
   updateAgentPriceTemplate,
-  deleteAgentPriceTemplate
+  deleteAgentPriceTemplate,
+  getProjectList
 } from '@/api/agent'
 import { getAgentProjectPrice } from '@/api/agent.projectPrice'
 
@@ -184,39 +202,97 @@ async function loadTemplates() {
   }
 }
 
-// ✅ 新建 / 编辑模板
 async function openDialog(row = null) {
-  // ✅ 如果是编辑模板，就用已有数据
-  if (row) {
-    form.value = JSON.parse(JSON.stringify(row))
-  } else {
-    form.value = { id: null, name: '', items: [] }
+  loading.value = true;
+  dialogVisible.value = true;
 
-    // ✅ 新建模板时，加载接口获取代理的项目价格
-    try {
-      loading.value = true
-      const res = await getAgentProjectPrice()
-      if (res.code === 200) {
-        // 将接口返回的数据直接映射到 form.items
-        form.value.items = (res.data || []).map(p => ({
+  try {
+    // 步骤 1: 并发获取所有项目列表和代理的专属价格配置，提高效率
+    const [projectRes, agentPriceRes] = await Promise.all([
+      getProjectList({ pageSize: -1 }),
+      getAgentProjectPrice()
+    ]);
+
+    // 校验项目列表接口
+    if (projectRes.code !== 200) {
+      ElMessage.error(projectRes.message || '加载项目列表失败');
+      dialogVisible.value = false;
+      return;
+    }
+    // 校验代理价格接口（非致命错误，可以继续）
+    if (agentPriceRes.code !== 200) {
+      ElMessage.warning(agentPriceRes.message || '获取代理项目价格失败，将使用默认最低价');
+    }
+
+    const latestProjects = projectRes.data.records || [];
+    const agentPrices = agentPriceRes.data || [];
+
+    // 步骤 2: 创建一个代理价格的映射表，方便快速查找
+    // Map 的 key 是 'projectId_lineId', value 是 agentPrice
+    const agentPriceMap = new Map(
+      agentPrices.map(item => [`${item.projectId}_${item.lineId}`, item.agentPrice])
+    );
+
+    // 步骤 3: 根据是“编辑”还是“新建”来构建表单数据
+    if (row) {
+      // ✅ 编辑模式
+      form.value = {
+        id: row.id,
+        name: row.name,
+        items: []
+      };
+
+      // 创建一个已保存在模板中的售价映射表
+      const savedPriceMap = new Map(
+        row.items.map(item => [`${item.projectId}_${item.lineId}`, item.price])
+      );
+
+      form.value.items = latestProjects.map(p => {
+        const key = `${p.projectId}_${p.lineId}`;
+        const agentPrice = agentPriceMap.get(key); // 从代理价格Map中查找
+        const savedPrice = savedPriceMap.get(key); // 从已存模板Map中查找
+
+        return {
           projectId: p.projectId,
           projectName: p.projectName,
           lineId: p.lineId,
-          costPrice: p.costPrice,
-          price: p.agentPrice ?? p.costPrice
-        }))
-      } else {
-        ElMessage.error(res.message || '加载项目价格失败')
-      }
-    } catch (e) {
-      ElMessage.error('网络异常，无法加载项目价格')
-    } finally {
-      loading.value = false
-    }
-  }
+          priceMax: p.priceMax,
+          // 核心逻辑: 如果代理有专属价格(agentPrice)，就用它；否则，用项目默认的最低价(p.priceMin)
+          priceMin: agentPrice !== undefined ? agentPrice : p.priceMin,
+          // 售价逻辑: 如果模板里存了价格，就用它；否则，使用默认价
+          price: savedPrice !== undefined ? savedPrice : (p.priceMax ?? p.priceMin),
+        };
+      });
 
-  dialogVisible.value = true
+    } else {
+      // ✅ 新建模式
+      form.value = { id: null, name: '', items: [] };
+
+      form.value.items = latestProjects.map(p => {
+        const key = `${p.projectId}_${p.lineId}`;
+        const agentPrice = agentPriceMap.get(key); // 从代理价格Map中查找
+
+        return {
+          projectId: p.projectId,
+          projectName: p.projectName,
+          lineId: p.lineId,
+          priceMax: p.priceMax,
+          // 核心逻辑: 如果代理有专属价格(agentPrice)，就用它；否则，用项目默认的最低价(p.priceMin)
+          priceMin: agentPrice !== undefined ? agentPrice : p.priceMin,
+          // 售价逻辑: 新建时默认使用最高价
+          price: p.priceMax ?? (agentPrice !== undefined ? agentPrice : p.priceMin),
+        };
+      });
+    }
+  } catch (e) {
+    console.error("加载模板数据时发生异常:", e);
+    ElMessage.error('网络异常，无法加载项目价格');
+    dialogVisible.value = false;
+  } finally {
+    loading.value = false;
+  }
 }
+
 
 
 // ✅ 添加项目

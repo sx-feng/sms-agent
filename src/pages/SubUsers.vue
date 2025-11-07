@@ -2,91 +2,69 @@
   <div class="sub-users-page">
     <!-- 顶部操作栏 -->
     <div class="page-header">
-  <div style="display: flex; align-items: center; gap: 10px;">
-    <el-button type="info" size="small" @click="goBack">⬅ 返回</el-button>
-    <h2>👥 下级管理</h2>
-  </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <el-button type="info" size="small" @click="goBack">⬅ 返回</el-button>
+        <h2>👥 下级管理</h2>
+      </div>
 
-  <div style="display: flex; align-items: center; gap: 10px;">
-    <el-input
-      v-model="searchUserName"
-      placeholder="输入下级用户名"
-      clearable
-      size="small"
-      style="width: 160px"
-    />
-    <el-button type="primary" size="small" @click="getUserList">🔍 查询</el-button>
-    <el-button type="success" size="small" @click="getUserList">🔄 刷新</el-button>
-    <el-button type="primary" size="small" @click="openEditDialog()">➕ 新增下级</el-button>
-  </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <el-input v-model="searchUserName" placeholder="根据用户名模糊查询" clearable size="small" style="width: 160px" />
+        <el-button type="primary" size="small" @click="getUserList">🔍 查询</el-button>
+        <el-button type="success" size="small" @click="getUserList">🔄 刷新</el-button>
+        <el-button type="primary" size="small" @click="openEditDialog()">➕ 新增下级</el-button>
+      </div>
 
-</div>
+    </div>
 
 
     <!-- 表格 -->
-    <el-table
-      :data="tableData"
-      border
-      style="width: 100%"
-      v-loading="loading"
-      resizable="false"     
-    >
-      <el-table-column prop="userName" label="用户名"  />
-      <el-table-column prop="balance" label="余额"  />
-      <el-table-column prop="status" label="状态" >
+    <el-table :data="tableData" border style="width: 100%" v-loading="loading" resizable="false">
+      <el-table-column prop="userName" label="用户名" />
+      <el-table-column prop="balance" label="余额" />
+      <el-table-column prop="status" label="状态">
         <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'">
+          <el-tag :type="row.status === 1 ? 'info' : 'success'">
             {{ row.status === 1 ? '禁用' : '启用' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="totalGetCount" label="取号数"  />
+      <el-table-column prop="totalGetCount" label="取号数" />
       <el-table-column label="回码率">
-  <template #default="{ row }">
-    {{ formatRate(row.totalCodeRate) }}
-  </template>
-</el-table-column>
+        <template #default="{ row }">
+          {{ formatRate(row.totalCodeRate) }}
+        </template>
+      </el-table-column>
 
-      <el-table-column label="代理" >
-  <template #default="{ row }">
-    <el-tag :type="row.isAgent ? 'success' : 'info'">
-      {{ row.isAgent ? '是' : '否' }}
-    </el-tag>
-  </template>
-</el-table-column>
+      <el-table-column label="代理">
+        <template #default="{ row }">
+          <el-tag :type="row.isAgent ? 'success' : 'info'">
+            {{ row.isAgent ? '是' : '否' }}
+          </el-tag>
+        </template>
+      </el-table-column>
 
       <!-- 操作列 -->
       <el-table-column label="操作" width="260">
         <template #default="{ row }">
           <el-button size="small" type="primary" @click="openEditDialog(row)">编辑</el-button>
           <el-button size="small" type="success" @click="goRecharge(row)">充值</el-button>
-<el-button size="small" type="info" @click="openRecordDialog(row)">账单</el-button>
-          
+          <el-button size="small" type="info" @click="openRecordDialog(row)">账单</el-button>
+
         </template>
       </el-table-column>
     </el-table>
 
     <!-- 分页 -->
     <div class="pagination-bar">
-      <el-pagination
-        v-model:current-page="page"
-        :page-size="pageSize"
-        :total="total"
-        layout="prev, pager, next, jumper"
-        @current-change="getUserList"
-      />
+      <el-pagination v-model:current-page="page" :page-size="pageSize" :total="total" layout="prev, pager, next, jumper"
+        @current-change="getUserList" />
     </div>
-<EditDialog v-model="addDialogVisible"    @updated="getUserList"/>
+    <EditDialog v-model="addDialogVisible" @updated="getUserList" />
     <!-- 弹窗组件（仅在显示时渲染，避免 Teleport 异常） -->
     <UserEditDialog v-if="editDialogVisible" v-model="editDialogVisible" :user="currentUser" @updated="getUserList" />
     <RecordDialog v-if="recordDialogVisible" v-model="recordDialogVisible" :user="currentUser" />
-    <UserRecharge
-  v-if="rechargeDialogVisible"
-  v-model="rechargeDialogVisible"
-  :user-id-prop="currentUser?.id"
-  @success="getUserList"
-  @updated="getUserList"
-/>
+    <UserRecharge v-if="rechargeDialogVisible" v-model="rechargeDialogVisible" :user-id-prop="currentUser?.id"
+      @success="getUserList" @updated="getUserList" />
 
   </div>
 </template>
@@ -94,7 +72,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import {  ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import UserEditDialog from '../components/UserEditDialog.vue'
 import RecordDialog from '../components/RecordDialog.vue'
 import EditDialog from '@/components/EditDialog.vue'
@@ -178,11 +156,11 @@ onMounted(() => {
 // 打开编辑弹窗（新增或编辑）
 async function openEditDialog(user = null) {
   if (user && user.id) {
-    await loadUserDetail(user.id) 
-      currentUser.value = user
+    await loadUserDetail(user.id)
+    currentUser.value = user
     editDialogVisible.value = true
   } else {
-   currentUser.value = null
+    currentUser.value = null
     addDialogVisible.value = true
   }
 }
@@ -248,11 +226,13 @@ function goRecharge(row) {
   flex-direction: column;
   gap: 20px;
 }
+
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
 .pagination-bar {
   display: flex;
   justify-content: center;

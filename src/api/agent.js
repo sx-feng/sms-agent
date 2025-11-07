@@ -102,5 +102,5 @@ export const deleteAgentPriceTemplate = (templateId) =>
   request(0, `/api/agent/price-templates/delete/${templateId}`)
 
 
-// 分页查询所有项目列表 
+// 分页查询项目列表
 export const getProjectList = (params) => request(0, '/api/project/find/all', params, true)
