@@ -3,15 +3,28 @@
     <el-card>
       <template #header>
         <div class="flex-between">
-           <el-button class="back-btn" @click="goBack" size="small">⬅ 返回</el-button>
+          <el-button class="back-btn" @click="goBack" size="small">⬅ 返回</el-button>
           <span>下级账单明细</span>
           <div class="filters">
-              <el-input
-    v-model="userName"
-    placeholder="输入代理用户名"
-    style="width: 160px;"
-    clearable
-  />
+            <el-input
+              v-model="userName"
+              placeholder="用户名查询"
+              style="width: 160px;"
+              clearable
+            />
+            
+            <!-- 新增：资金类型筛选 -->
+            <el-select v-model="fundType" placeholder="资金类型" style="width: 140px;" clearable>
+              <el-option label="业务扣费" :value="0" />
+              <el-option label="后台操作" :value="1" />
+            </el-select>
+
+            <!-- 新增：账本类型筛选 -->
+            <el-select v-model="ledgerType" placeholder="账本类型" style="width: 140px;" clearable>
+              <el-option label="出账" :value="0" />
+              <el-option label="入账" :value="1" />
+            </el-select>
+
             <el-date-picker
               v-model="dateRange"
               type="daterange"
@@ -20,11 +33,11 @@
               value-format="YYYY-MM-DD HH:mm:ss"
               style="width: 260px"
             />
-            <el-input
+            <!-- <el-input
               v-model="searchUser"
               placeholder="输入下级账号ID"
               style="width: 180px; margin-left: 10px;"
-            />
+            /> -->
             <el-button type="primary" @click="fetchBills">查询</el-button>
             <el-button @click="resetFilter">重置</el-button>
             <el-button type="success" @click="exportExcel">导出Excel</el-button>
@@ -34,7 +47,7 @@
 
       <el-table :data="billList" border stripe style="width: 100%">
         <el-table-column prop="id" label="账单ID" width="100" />
-        <el-table-column prop="user" label="用户账号" width="150" />
+        <el-table-column prop="userName" label="用户名" width="150" />
         <el-table-column prop="type" label="类型" width="120">
           <template #default="{ row }">
             <el-tag v-if="row.type === 'recharge'" type="success">充值</el-tag>
@@ -55,15 +68,15 @@
       </el-table>
 
       <div class="pagination">
-      <el-pagination
-  background
-  layout="prev, pager, next, jumper, sizes, total"
-  :current-page="currentPage"
-  :page-size="pageSize"
-  :total="total"
-  @size-change="size => { pageSize = size; fetchBills() }"
-  @current-change="handlePageChange"
-/>
+        <el-pagination
+          background
+          layout="prev, pager, next, jumper, sizes, total"
+          :current-page="currentPage"
+          :page-size="pageSize"
+          :total="total"
+          @size-change="size => { pageSize = size; fetchBills() }"
+          @current-change="handlePageChange"
+        />
       </div>
     </el-card>
   </div>
@@ -73,8 +86,9 @@
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as XLSX from 'xlsx'
-import{UserLedger} from '@/api/agent'
+import { UserLedger } from '@/api/agent'
 import { useRouter } from 'vue-router'
+
 const router = useRouter()
 
 function goBack() {
@@ -84,26 +98,40 @@ function goBack() {
     router.push('/reseller/sub-users') // 无历史记录时回到下级管理页
   }
 }
+
 const userName = ref(localStorage.getItem('userName') || '')
-// 模拟分页账单数据
 const billList = ref([])
 const total = ref(0)
 const pageSize = ref(10)
 const currentPage = ref(1)
 const dateRange = ref([])
 const searchUser = ref('')
+
+// 新增：为筛选条件创建 ref
+const fundType = ref(null) // 使用 null 或 '' 代表 "全部"
+const ledgerType = ref(null)
+
 const fetchBills = async () => {
-  // ✅ 不再强制输入条件：支持显示全部账单
   const params = {
     page: currentPage.value,
     size: pageSize.value,
   }
+
+  // 添加现有筛选条件到 params
   if (userName.value) params.userName = userName.value.trim()
-  // 如果选择了用户ID或日期范围，就带上参数
   if (searchUser.value) params.targetUserId = Number(searchUser.value)
   if (dateRange.value && dateRange.value.length === 2) {
     params.startTime = dateRange.value[0]
     params.endTime = dateRange.value[1]
+  }
+
+  // 新增：添加 fundType 和 ledgerType 到请求参数中
+  // 只有当用户选择了明确的选项时（值不为 null 或空字符串），才添加该参数
+if (fundType.value !== null && fundType.value !== undefined && fundType.value !== '') {
+  params.fundType = fundType.value
+}
+  if (ledgerType.value !== null && ledgerType.value !== undefined && ledgerType.value !== '') {
+    params.ledgerType = ledgerType.value
   }
 
   const res = await UserLedger(params)
@@ -119,7 +147,8 @@ const fetchBills = async () => {
     amount: Number(i.price),
     balance: Number(i.balance || 0),
     remark: i.description || i.remark || '--',
-     timestamp: i.timestamp || i.createTime || '--'
+    timestamp: i.timestamp || i.createTime || '--',
+    userName: i.userName || '--'
   }))
   total.value = res.data.total || 0
 }
@@ -132,6 +161,10 @@ const handlePageChange = (page) => {
 const resetFilter = () => {
   dateRange.value = []
   searchUser.value = ''
+  // 新增：重置 fundType 和 ledgerType
+  fundType.value = null
+  ledgerType.value = null
+  
   fetchBills()
 }
 
@@ -173,7 +206,7 @@ onMounted(() => {
 .filters {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 8px; /* 使用 gap 优化间距 */
 }
 .pagination {
   margin-top: 20px;
@@ -204,5 +237,4 @@ onMounted(() => {
   font-size: 16px;
   color: #333;
 }
-
 </style>

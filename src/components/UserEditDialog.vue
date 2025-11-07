@@ -8,9 +8,9 @@
   >
     <el-form :model="form" label-width="120px">
       <!-- 用户ID -->
-      <el-form-item label="用户ID">
+      <!-- <el-form-item label="用户ID">
         <el-input v-model="form.id" placeholder="自动生成/不可修改" disabled />
-      </el-form-item>
+      </el-form-item> -->
 
       <!-- 用户名 -->
       <el-form-item label="用户名">
@@ -22,8 +22,6 @@
         <el-input
           v-model="form.password"
           placeholder="请输入新密码（留空则不修改）"
-          type="password"
-          show-password
         />
       </el-form-item>
 
