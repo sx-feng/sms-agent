@@ -1,10 +1,11 @@
 ﻿<template>
   <el-dialog
-    title="下级充值 / 扣款"
+    :title="actionType === 'recharge' ? '下级充值' : '下级扣款'"
     :model-value="modelValue"
     width="420px"
     :close-on-click-modal="false"
-    @update:modelValue="emit('update:modelValue', $event)"
+    @update:modelValue="handleClose"
+    @closed="resetForm"
   >
     <el-form label-width="100px" label-position="left">
       <el-form-item label="下级用户ID">
@@ -30,7 +31,7 @@
 
     <template #footer>
       <div style="display: flex; justify-content: flex-end; gap: 10px;">
-        <el-button @click="emit('update:modelValue', false)">取消</el-button>
+        <el-button @click="handleClose">取消</el-button>
         <el-button type="primary" :loading="loading" @click="handleSubmit">
           {{ actionType === 'recharge' ? '确认充值' : '确认扣款' }}
         </el-button>
@@ -47,19 +48,29 @@ import { rechargeAgentUser, deductAgentUser } from '@/api/agent'
 const props = defineProps({
   modelValue: Boolean,
   userIdProp: [String, Number],
+  actionTypeProp: {
+    type: String,
+    default: 'recharge',
+    validator: (value) => ['recharge', 'deduct'].includes(value),
+  },
 })
 const emit = defineEmits(['update:modelValue', 'success'])
 
 const userId = ref('')
-const amount = ref(0)
-const actionType = ref('recharge')
+const amount = ref() // 默认 undefined 以便显示 placeholder
 const loading = ref(false)
 
-// 初始化 userId
+// --- 核心修改在这里 ---
+// 直接使用 prop 初始化 actionType，而不是通过 watch。
+// 这种方式更直接，避免了组件创建时的潜在时序问题。
+const actionType = ref(props.actionTypeProp)
+// --- 修改结束 ---
+
+// 监听 userIdProp 仍然是必要的
 watch(
   () => props.userIdProp,
   (val) => {
-    if (val) userId.value = val
+    if (val) userId.value = String(val) // 确保是字符串
   },
   { immediate: true }
 )
@@ -72,18 +83,22 @@ async function handleSubmit() {
 
   loading.value = true
   try {
+    const params = {
+      userId: Number(userId.value),
+      amount: Number(amount.value),
+    }
     const res =
       actionType.value === 'recharge'
-        ? await rechargeAgentUser(Number(userId.value), Number(amount.value))
-        : await deductAgentUser(Number(userId.value), Number(amount.value))
+        ? await rechargeAgentUser(params)
+        : await deductAgentUser(params)
 
     if (res.ok) {
       ElMessage.success(actionType.value === 'recharge' ? '充值成功' : '扣款成功')
       emit('success')
       emit('update:modelValue', false)
-      resetForm()
     } else {
-      ElMessage.error(res.message || '操作失败')
+      const errorMessage = typeof res.data === 'string' && res.data ? res.data : res.message
+      ElMessage.error(errorMessage || '操作失败')
     }
   } catch {
     ElMessage.error('网络异常，请稍后重试')
@@ -92,8 +107,13 @@ async function handleSubmit() {
   }
 }
 
+function handleClose() {
+  emit('update:modelValue', false)
+}
+
 function resetForm() {
-  amount.value = 0
-  actionType.value = 'recharge'
+  // 当弹窗关闭时，仅重置金额字段即可
+  // userId 和 actionType 会在下次打开时由 props 重新初始化
+  amount.value = undefined
 }
 </script>

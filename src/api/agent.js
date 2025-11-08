@@ -104,3 +104,94 @@ export const deleteAgentPriceTemplate = (templateId) =>
 
 // 分页查询项目列表
 export const getProjectList = (params) => request(0, '/api/project/find/all', params, true)
+
+/**
+ * 编辑或更新指定用户的项目价格配置
+ * @param {object} data - 包含用户ID和该用户全新的项目价格配置列表
+ * @param {number} data.userId - 目标用户的ID
+ * @param {Array<object>} data.projectPrices - 项目价格配置数组
+ *  {
+    userId: 123, // 示例用户ID
+    userName: 'exampleUser', // 用户名（如果需要）
+    projectPrices: [
+      {
+        // 第一个项目的价格信息
+        id: 1, // 项目配置表id
+        userProjectLineTableId: 101, // 用户项目线路配置表id
+        projectName: '项目A',
+        projectId: 'PROJ_A',
+        lineId: 'LINE_1',
+        price: 15.50,
+        costPrice: 10.00,
+        maxPrice: 20.00,
+        minPrice: 12.00,
+      },
+      {
+        // 第二个项目的价格信息
+        id: 2,
+        userProjectLineTableId: 102,
+        projectName: '项目B',
+        projectId: 'PROJ_B',
+        lineId: 'LINE_2',
+        price: 25.00,
+        costPrice: 18.00,
+        maxPrice: 30.00,
+        minPrice: 22.00,
+      }
+      // ... 其他项目
+    ]
+  };
+ * @returns {Promise}
+ */
+export const updateUserProjectPrices = (data) => {
+  return request(
+ 1,'/sub-user-project-prices/update', // 后端 Controller 中定义的 URL
+    data // 请求体，其结构应与后端的 SubUserProjectPriceDTO 匹配
+  );
+}
+
+/**
+ * 根据下级用户ID获取其项目价格配置列表
+ * @param {number} userId - 下级用户的ID
+ * @returns {Promise} - 返回包含项目价格配置列表的 Promise 对象
+ * {
+    "code": 200,
+    "message": "查询成功",
+    "data": [
+        {
+            "id": 32,
+            "createTime": "2025-10-23 16:47:07",
+            "updateTime": "2025-10-23 16:47:07",
+            "userId": 11,
+            "projectTableId": null,
+            "projectName": "陌陌15",
+            "projectId": "16",
+            "lineId": "16",
+            "costPrice": 1.00,
+            "remark": null,
+            "agentPrice": 1.00
+        },
+        {
+            "id": 52,
+            "createTime": "2025-11-04 15:14:06",
+            "updateTime": "2025-11-04 15:14:06",
+            "userId": 11,
+            "projectTableId": 16,
+            "projectName": "JD①",
+            "projectId": "109",
+            "lineId": "1",
+            "costPrice": 7.80,
+            "remark": null,
+            "agentPrice": 15.00
+        }
+    ]
+}
+ */
+export const getSubUserProjectPricesById = (userId) => {
+  return request(
+    0,
+    '/api/agent/user/project-prices',
+    { userId },
+    true
+  );
+};
