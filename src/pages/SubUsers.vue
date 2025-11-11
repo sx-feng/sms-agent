@@ -53,9 +53,13 @@
 
     <!-- 分页 -->
     <div class="pagination-bar">
-      <el-pagination v-model:current-page="page" :page-size="pageSize" :total="total" layout="prev, pager, next, jumper, total"
-        @current-change="handlePageChange" />
-    </div>
+  <el-pagination 
+    v-model:current-page="page" 
+    :page-size="pageSize" 
+    :total="total" 
+    layout="prev, pager, next, jumper, total"
+    /> <!-- 删除了 @current-change -->
+</div>
 
     <!-- 弹窗组件 -->
     <UserEditDialog 
@@ -76,10 +80,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue' // 1. 导入 watch
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import UserEditDialog from '../components/UserEditDialog.vue' // 统一使用这一个组件
+import UserEditDialog from '../components/UserEditDialog.vue'
 import RecordDialog from '../components/RecordDialog.vue'
 import UserRecharge from '../components/UserRecharge.vue'
 import { listAgentUsers } from '@/api/agent'
@@ -107,15 +111,25 @@ async function getUserList() {
   loading.value = true
   try {
     const params = {
-      current: page.value,
+      page: page.value,
       size: pageSize.value,
-      userName: searchUserName.value.trim() || null
+      userName: searchUserName.value.trim() || ''
     }
     const res = await listAgentUsers(params)
-    if (res.code === 200) {
-      tableData.value = res.data.records || []
-      total.value = res.data.total || 0
-    } else {
+
+    // --- 开始调试 ---
+    console.log('API返回的原始响应:', res);
+    if (res.code === 200 && res.data) {
+      console.log('即将用来更新表格的数据:', res.data.records);
+      console.log('更新前的 tableData:', JSON.parse(JSON.stringify(tableData.value))); // 使用JSON深拷贝来查看快照
+      
+      tableData.value = res.data.records || [];
+      total.value = res.data.total || 0;
+
+      console.log('更新后的 tableData:', tableData.value);
+    }
+    // --- 结束调试 ---
+    else {
       ElMessage.error(res.message || '加载数据失败')
     }
   } catch (error) {
@@ -126,10 +140,12 @@ async function getUserList() {
   }
 }
 
-function handlePageChange(currentPage) {
-  page.value = currentPage;
-  getUserList();
-}
+// 2. 删除 handlePageChange 函数
+
+// 3. 添加 watch 来侦听 page 的变化
+watch(page, () => {
+  getUserList()
+})
 
 function formatRate(value) {
   if (value == null || isNaN(value)) return '--'
@@ -143,7 +159,7 @@ onMounted(() => {
 
 // 打开通用编辑/新增弹窗
 function openEditDialog(user = null) {
-  currentUser.value = user // 如果 user 为 null，则为新增；否则为编辑
+  currentUser.value = user
   editDialogVisible.value = true
 }
 
@@ -159,7 +175,6 @@ function openRechargeDialog(row, action) {
   rechargeDialogVisible.value = true
 }
 </script>
-
 <style scoped>
 .sub-users-page {
   padding: 20px;

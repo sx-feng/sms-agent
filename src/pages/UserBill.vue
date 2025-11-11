@@ -13,13 +13,17 @@
               clearable
             />
             
-            <!-- 新增：资金类型筛选 -->
+            <!-- 修改：资金类型筛选，使用 v-for 动态渲染 -->
             <el-select v-model="fundType" placeholder="资金类型" style="width: 140px;" clearable>
-              <el-option label="业务扣费" :value="0" />
-              <el-option label="后台操作" :value="1" />
+              <el-option
+                v-for="item in fundTypeOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
             </el-select>
 
-            <!-- 新增：账本类型筛选 -->
+            <!-- 账本类型筛选 -->
             <el-select v-model="ledgerType" placeholder="账本类型" style="width: 140px;" clearable>
               <el-option label="出账" :value="0" />
               <el-option label="入账" :value="1" />
@@ -33,11 +37,6 @@
               value-format="YYYY-MM-DD HH:mm:ss"
               style="width: 260px"
             />
-            <!-- <el-input
-              v-model="searchUser"
-              placeholder="输入下级账号ID"
-              style="width: 180px; margin-left: 10px;"
-            /> -->
             <el-button type="primary" @click="fetchBills">查询</el-button>
             <el-button @click="resetFilter">重置</el-button>
             <el-button type="success" @click="exportExcel">导出Excel</el-button>
@@ -95,9 +94,18 @@ function goBack() {
   if (window.history.length > 1) {
     router.back()
   } else {
-    router.push('/reseller/sub-users') // 无历史记录时回到下级管理页
+    router.push('/reseller/sub-users')
   }
 }
+
+// 新增：根据 Java Enum FundType 定义资金类型选项
+const fundTypeOptions = ref([
+  { value: 0, label: '业务扣费' },
+  { value: 1, label: '代理充值' },
+  { value: 2, label: '代理扣款' },
+  { value: 4, label: '代理回款' },
+  { value: 3, label: '管理员操作' }
+])
 
 const userName = ref(localStorage.getItem('userName') || '')
 const billList = ref([])
@@ -107,8 +115,8 @@ const currentPage = ref(1)
 const dateRange = ref([])
 const searchUser = ref('')
 
-// 新增：为筛选条件创建 ref
-const fundType = ref(null) // 使用 null 或 '' 代表 "全部"
+// 为筛选条件创建 ref
+const fundType = ref(null) // 使用 null 代表 "全部"
 const ledgerType = ref(null)
 
 const fetchBills = async () => {
@@ -117,7 +125,6 @@ const fetchBills = async () => {
     size: pageSize.value,
   }
 
-  // 添加现有筛选条件到 params
   if (userName.value) params.userName = userName.value.trim()
   if (searchUser.value) params.targetUserId = Number(searchUser.value)
   if (dateRange.value && dateRange.value.length === 2) {
@@ -125,11 +132,10 @@ const fetchBills = async () => {
     params.endTime = dateRange.value[1]
   }
 
-  // 新增：添加 fundType 和 ledgerType 到请求参数中
-  // 只有当用户选择了明确的选项时（值不为 null 或空字符串），才添加该参数
-if (fundType.value !== null && fundType.value !== undefined && fundType.value !== '') {
-  params.fundType = fundType.value
-}
+  // 添加 fundType 和 ledgerType 到请求参数中
+  if (fundType.value !== null && fundType.value !== undefined && fundType.value !== '') {
+    params.fundType = fundType.value
+  }
   if (ledgerType.value !== null && ledgerType.value !== undefined && ledgerType.value !== '') {
     params.ledgerType = ledgerType.value
   }
@@ -161,7 +167,6 @@ const handlePageChange = (page) => {
 const resetFilter = () => {
   dateRange.value = []
   searchUser.value = ''
-  // 新增：重置 fundType 和 ledgerType
   fundType.value = null
   ledgerType.value = null
   

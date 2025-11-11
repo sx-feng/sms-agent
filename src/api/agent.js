@@ -46,6 +46,48 @@ export const getDashboardStats = (params = {}) => request(0, '/api/agent/dashboa
 export const getAgentProjects = (params) =>
   request(0, '/api/agent/get/by-agent/project', params, true)
 
+
+//获取自己的项目价格配置
+/**
+ * 
+ * @returns {Promise} 返回包含代理自己项目价格配置的 Promise 对象
+ * 返回数据：{
+    "code": 200,
+    "message": "查询成功！",
+    "data": [
+        
+        {
+            "id": 130,
+            "createTime": "2025-11-06 16:14:04",
+            "updateTime": "2025-11-06 16:14:04",
+            "userId": 2,
+            "projectTableId": 19,
+            "projectName": "222",
+            "projectId": "222",
+            "lineId": "222",
+            "costPrice": 2.00,
+            "remark": null,
+            "agentPrice": 3.00
+        },
+        {
+            "id": 170,
+            "createTime": "2025-11-07 15:21:32",
+            "updateTime": "2025-11-07 15:21:32",
+            "userId": 2,
+            "projectTableId": 20,
+            "projectName": "MM首③24H",
+            "projectId": "101",
+            "lineId": "3",
+            "costPrice": 5.50,
+            "remark": null,
+            "agentPrice": 10.00
+        }
+    ]
+}
+ */
+export const getAgentProjectPrice = () =>
+  request(0, '/api/agent/project/price', {}, true)
+
 // 更新
 export const getProjectConfig = () =>
   request(0, '/api/agent/get/by-agent/project', {}, true)
@@ -145,7 +187,7 @@ export const getProjectList = (params) => request(0, '/api/project/find/all', pa
  */
 export const updateUserProjectPrices = (data) => {
   return request(
- 1,'/sub-user-project-prices/update', // 后端 Controller 中定义的 URL
+ 1,'/api/agent/sub-user-project-prices/update', // 后端 Controller 中定义的 URL
     data // 请求体，其结构应与后端的 SubUserProjectPriceDTO 匹配
   );
 }
@@ -195,3 +237,14 @@ export const getSubUserProjectPricesById = (userId) => {
     true
   );
 };
+
+/**
+ * 查询代理总利润
+  GET /api/agent/by-user/totalProfit
+  数据在data中
+  接口ID：374305239
+  接口地址：https://app.apifox.com/link/project/7230479/apis/api-374305239
+ */
+export const getAgentTotalProfit = () => {
+  return request(0,'/api/agent/by-user/totalProfit');
+}

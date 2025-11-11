@@ -119,7 +119,8 @@ async function loadDashboard() {
         { title: '我的余额', value: `¥${res.data.myBalance || 0}`, icon: 'el-icon-wallet' },
         { title: '下级总数', value: res.data.totalSubUsers || 0, icon: 'el-icon-user' },
         { title: '今日充值', value: `¥${res.data.todaySubUsersRecharge || 0}`, icon: 'el-icon-money' },
-        { title: '回码率（24h）', value: `${res.data.subUsersCodeRate || 0}%`, icon: 'el-icon-pie-chart' }
+        { title: '回码率（24h）', value: `${res.data.subUsersCodeRate || 0}%`, icon: 'el-icon-pie-chart' },
+        { title: '代理总利润', value: `¥${res.data.totalProfit || 0}`, icon: 'el-icon-sold-out' }
       ]
     } else {
       ElMessage.error(res.message || '获取仪表盘数据失败')
@@ -203,6 +204,7 @@ onMounted(() => loadDashboard())
 .icon-1 { background: linear-gradient(45deg, #67c23a, #85ce61); }
 .icon-2 { background: linear-gradient(45deg, #e6a23c, #ebb563); }
 .icon-3 { background: linear-gradient(45deg, #f56c6c, #f78989); }
+.icon-4 { background: linear-gradient(45deg, #e46c6c, #e78999); }
 .stat-title {
   font-size: 15px;
   color: #666;

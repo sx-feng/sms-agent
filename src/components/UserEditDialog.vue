@@ -116,15 +116,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue' // <--- 移除了未使用的 'watch'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { 
-  createAgentUser, 
-  updateAgentUser, 
-  getAgentPriceTemplates, 
-  getAgentProjects,
+import {
+  createAgentUser,
+  updateAgentUser,
+  getAgentPriceTemplates,
+  getAgentProjectPrice,
   getSubUserProjectPricesById,
-  getProjectList
+  getProjectList,
+  updateUserProjectPrices, // ✅ 引入 updateUserProjectPrices 方法
 } from '@/api/agent'
 
 const props = defineProps({
@@ -142,12 +143,11 @@ const selectedTemplateId = ref(null)
 
 const isEdit = computed(() => !!(props.user && props.user.id))
 
-// 弹窗打开时初始化所有数据
 async function handleOpen() {
   loading.value = true
   selectedTemplateId.value = null
-  
-  // 1. 初始化表单
+
+  // 初始化表单
   if (isEdit.value) {
     form.value = {
       id: props.user.id,
@@ -161,74 +161,92 @@ async function handleOpen() {
       username: '',
       password: '',
       isAgent: false,
-      status: 0 // 默认启用
+      status: 0
     }
   }
-  
-  // 2. 并发加载模板和价格数据
+
+  // 并行加载数据
   await Promise.all([
     loadTemplates(),
     loadAndProcessPrices()
   ])
-  
+
   loading.value = false
 }
 
+// 请用下面的版本替换你原来的 loadAndProcessPrices 函数
 
-// 加载并整合处理价格数据
 async function loadAndProcessPrices() {
   try {
-    const fetchTasks = [
-      getProjectList({ size: 9999 }), // 获取所有项目
-      getAgentProjects() // 获取代理自己的价格
-    ];
+    // 并行获取“我的(代理的)价格”和“所有项目的基础信息”
+    const [agentPriceRes, projectListRes] = await Promise.all([
+      getAgentProjectPrice(),
+      getProjectList({ size: -1 })
+    ]);
 
-    if (isEdit.value) {
-      // 如果是编辑，额外获取该用户的价格配置
-      fetchTasks.push(getSubUserProjectPricesById(props.user.id));
+    if (agentPriceRes.code !== 200 || !Array.isArray(agentPriceRes.data)) {
+      throw new Error('加载您的项目价格配置失败');
+    }
+    const agentBasePrices = agentPriceRes.data;
+
+    // 创建项目元数据映射，用于查找最高价
+    const projectMetaMap = new Map();
+    if (projectListRes.code === 200 && projectListRes.data?.records) {
+      projectListRes.data.records.forEach(proj => {
+        const key = `${proj.projectId}_${proj.lineId}`;
+        projectMetaMap.set(key, {
+          maxPrice: proj.priceMax ? Number(proj.priceMax) : null,
+        });
+      });
     }
 
-    const [projectRes, agentPriceRes, userPriceRes] = await Promise.all(fetchTasks);
+    // ✅ [核心修改点 1] 获取并处理该用户的现有价格配置
+    let userPriceMap = new Map();
+    if (isEdit.value) {
+      const userPriceRes = await getSubUserProjectPricesById(props.user.id);
+      if (userPriceRes.code === 200 && Array.isArray(userPriceRes.data)) {
+        userPriceRes.data.forEach(p => {
+          const key = `${p.projectId}_${p.lineId}`;
+          // 将完整的价格对象存入 Map，而不仅仅是价格值
+          // 这样我们就能同时获得记录的 `id` 和 `agentPrice`
+          userPriceMap.set(key, p);
+        });
+      } else {
+         ElMessage.warning('获取该用户的价格配置失败，将使用默认值');
+      }
+    }
 
-    if (projectRes.code !== 200) throw new Error('加载项目列表失败');
-    if (agentPriceRes.code !== 200) ElMessage.warning('获取您的成本价失败，部分价格可能不准');
-    
-    const allProjects = projectRes.data?.records || [];
-    const agentPrices = agentPriceRes.data || [];
-    const userPrices = isEdit.value ? (userPriceRes?.data || []) : [];
-
-    // 创建映射表以提高查找效率
-    // ✅ FIX: 修正了 .map() 的用法
-    const agentPriceMap = new Map(agentPrices.map(p => [`${p.projectId}_${p.lineId}`, p.agentPrice]));
-    const userPriceMap = new Map(userPrices.map(p => [`${p.projectId}_${p.lineId}`, p.agentPrice]));
-
-
-    // 整合数据
-    prices.value = allProjects.map(p => {
-      const key = `${p.projectId}_${p.lineId}`;
-      const costPrice = agentPriceMap.get(key) ?? p.minPrice; // 代理的售价是下级的成本价
-      const userPrice = userPriceMap.get(key);
+    // ✅ [核心修改点 2] 组合最终的 prices 列表
+    prices.value = agentBasePrices.map(agentProj => {
+      const key = `${agentProj.projectId}_${agentProj.lineId}`;
+      const meta = projectMetaMap.get(key) || {};
+      const userPriceData = userPriceMap.get(key); // 获取完整的用户价格对象
+      const costPriceForSubUser = Number(agentProj.agentPrice);
 
       return {
-        id:p.id,
-        projectName: p.projectName,
-        projectId: p.projectId,
-        lineId: p.lineId,
-        costPrice: Number(costPrice),
-        maxPrice: p.maxPrice ? Number(p.maxPrice) : null,
-        // 核心逻辑：编辑时用用户价，否则用成本价作为默认售价
-        agentPrice: Number(userPrice ?? costPrice)
+        // `id`: 用户价格记录的主键。如果是新增用户或该项目未定价，则为 null
+        id: userPriceData ? userPriceData.id : null,
+        // `projectTableId`: 项目线路在主表中的ID，用于新建关联关系
+        projectTableId: agentProj.projectTableId,
+        
+        // 其他基础信息
+        projectName: agentProj.projectName,
+        projectId: agentProj.projectId,
+        lineId: agentProj.lineId,
+        costPrice: costPriceForSubUser,
+        maxPrice: meta.maxPrice ?? null,
+        // `agentPrice`: 优先使用用户已有的价格，否则默认为代理的成本价
+        agentPrice: userPriceData ? Number(userPriceData.agentPrice) : costPriceForSubUser
       };
     });
 
   } catch (error) {
     console.error("加载价格数据出错:", error);
     ElMessage.error(error.message || '网络异常，加载价格数据失败');
-    prices.value = []; // 出错时清空
+    prices.value = [];
   }
 }
 
-// 加载价格模板
 async function loadTemplates() {
   try {
     const res = await getAgentPriceTemplates()
@@ -240,7 +258,6 @@ async function loadTemplates() {
   }
 }
 
-// 应用模板
 function applyTemplate(templateId) {
   if (!templateId) return
   const tpl = templates.value.find(t => t.id === templateId)
@@ -254,8 +271,7 @@ function applyTemplate(templateId) {
     const key = `${p.projectId}_${p.lineId}`
     if (templatePriceMap.has(key)) {
       const templatePrice = templatePriceMap.get(key)
-      // 保证应用的价格在有效区间内
-      if (templatePrice >= p.costPrice && (!p.maxPrice || templatePrice <= p.maxPrice)) {
+      if (templatePrice >= p.costPrice && (p.maxPrice === null || templatePrice <= p.maxPrice)) {
         p.agentPrice = templatePrice
       }
     }
@@ -263,43 +279,106 @@ function applyTemplate(templateId) {
   ElMessage.success(`已应用模板「${tpl.name}」的售价`)
 }
 
-// 保存
-async function save() {
-  const projectPrices = prices.value.map(p => ({
-    userProjectLineId: p.id, // 用户项目线路表 ID
-    agentPrice: Number(p.agentPrice),
-    projectId: p.projectId,
-    lineId: p.lineId
-  }))
+// ==========================================================
+// ✅ [核心修改] 重构 save 函数
+// ==========================================================
+// 请用下面的版本替换你原来的 save 函数
 
-  const payload = { ...form.value, projectPrices };
-  if (!payload.password) {
-    delete payload.password;
+async function save() {
+  // 1. 价格合法性校验 (逻辑不变)
+  for (const p of prices.value) {
+    if (p.agentPrice < p.costPrice) {
+      ElMessage.error(`项目"${p.projectName}"的售价不能低于成本价 ${p.costPrice}`);
+      return;
+    }
+    if (p.maxPrice !== null && p.agentPrice > p.maxPrice) {
+       ElMessage.error(`项目"${p.projectName}"的售价不能高于最高价 ${p.maxPrice}`);
+      return;
+    }
   }
-  
+
   saving.value = true;
   try {
-    // 根据是否为编辑模式，调用不同接口
-    const apiCall = isEdit.value ? updateAgentUser : createAgentUser;
-    const res = await apiCall(payload);
+    // 2. 根据是“新增”还是“编辑”执行不同逻辑
+    if (isEdit.value) {
+      // --- 编辑逻辑：分两步调用API ---
 
-    if (res.code === 200) {
-      ElMessage.success('保存成功');
-      emit('update:modelValue', false);
-      emit('updated'); // 通知父组件刷新列表
+      // 2.1 准备并调用【更新用户基本信息】接口
+      const userPayload = { ...form.value };
+      if (!userPayload.password) {
+        delete userPayload.password;
+      }
+      const userUpdateRes = await updateAgentUser(userPayload);
+      if (userUpdateRes.code !== 200) {
+        throw new Error(userUpdateRes.message || '更新用户信息失败');
+      }
+
+      // 2.2 ✅ [核心修改点 3] 准备并调用【更新价格配置】接口
+      //     为每条价格记录都附上它自己的主键 `id`
+      const pricePayload = {
+        userId: props.user.id,
+        projectPrices: prices.value.map(p => ({
+          // `id`: 用户价格记录的主键，后端据此更新数据
+          id: p.id,
+          // `price`: 用户要更新的价格
+          price: Number(p.agentPrice),
+          // `projectId` 和 `lineId` 作为业务标识
+          projectId: p.projectId,
+          lineId: p.lineId,
+        }))
+      };
+      const priceUpdateRes = await updateUserProjectPrices(pricePayload);
+      if (priceUpdateRes.code !== 200) {
+        throw new Error(priceUpdateRes.message || '用户信息已更新，但价格配置更新失败');
+      }
+
     } else {
-      ElMessage.error(res.message || '保存失败');
+      // --- 新增逻辑：一次性提交 ---
+      // ✅ [核心修改点 4] 使用 `projectTableId` 作为 `userProjectLineId`
+      const projectPrices = prices.value.map(p => ({
+        // `userProjectLineId`：在新建时，告诉后端要关联哪个主项目线路
+        userProjectLineId: p.projectTableId,
+        price: Number(p.agentPrice),
+        projectId: p.projectId,
+        lineId: p.lineId
+      }));
+      
+      const payload = { ...form.value, projectPrices };
+      if (!payload.password) {
+        delete payload.password;
+      }
+      
+      const createRes = await createAgentUser(payload);
+      if (createRes.code !== 200) {
+        throw new Error(createRes.message || '创建用户失败');
+      }
     }
-  } catch {
-    ElMessage.error('网络异常，请稍后重试');
+
+    // 3. 全部成功后的操作 (逻辑不变)
+    ElMessage.success('保存成功');
+    emit('update:modelValue', false);
+    emit('updated');
+
+  } catch(e) {
+    console.error("保存操作失败：", e);
+    ElMessage.error(e.message || '网络异常，请稍后重试');
   } finally {
     saving.value = false;
   }
 }
 
+
 function onUpdate(val) {
   emit('update:modelValue', val)
 }
+
+onMounted(() => {
+  // 注意：在 Dialog 组件中，推荐使用 @open 事件代替 onMounted
+  // 因为 onMounted 只执行一次，而 @open 每次打开都会执行，更符合弹窗逻辑
+  // 你代码中已经正确使用了 @open，所以这里的 onMounted 可以移除，避免重复调用
+  handleOpen();
+});
+
 </script>
 
 <style scoped>

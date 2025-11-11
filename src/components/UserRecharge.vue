@@ -83,14 +83,14 @@ async function handleSubmit() {
 
   loading.value = true
   try {
-    const params = {
-      userId: Number(userId.value),
-      amount: Number(amount.value),
-    }
+    // const params = {
+    //   targetUserId: userId.value,
+    //   amount: amount.value,
+    // }
     const res =
       actionType.value === 'recharge'
-        ? await rechargeAgentUser(params)
-        : await deductAgentUser(params)
+        ? await rechargeAgentUser(userId.value, amount.value)
+        : await deductAgentUser(userId.value, amount.value)
 
     if (res.ok) {
       ElMessage.success(actionType.value === 'recharge' ? '充值成功' : '扣款成功')
@@ -114,6 +114,6 @@ function handleClose() {
 function resetForm() {
   // 当弹窗关闭时，仅重置金额字段即可
   // userId 和 actionType 会在下次打开时由 props 重新初始化
-  amount.value = undefined
+  amount.value = ''
 }
 </script>

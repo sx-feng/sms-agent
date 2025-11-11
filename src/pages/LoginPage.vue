@@ -14,6 +14,11 @@
 
         <el-button type="primary" class="login-btn" :loading="loading" @click="handleLogin">登录</el-button>
       </el-form>
+
+      <!-- 新增的提示语 -->
+      <div class="login-tip">
+        提示：如果登录后系统提示Token错误或查询无权限，请尝试退出后重新登录。
+      </div>
     </div>
   </div>
 </template>
@@ -91,4 +96,12 @@ const handleLogin = async () => {
 }
 .title { text-align: center; font-size: 20px; font-weight: 600; color: #333; margin-bottom: 20px; }
 .login-btn { width: 100%; margin-top: 10px; }
+/* 新增的提示语样式 */
+.login-tip {
+  margin-top: 20px;
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+  line-height: 1.5;
+}
 </style>
