@@ -70,6 +70,7 @@
             <span class="col-price">成本价</span>
             <span class="col-price">最高价</span>
             <span class="col-input">下级售价</span>
+            <span class="col-input">是否启用</span>
           </div>
           <div class="price-scroll-area">
             <div class="price-row" v-for="p in prices" :key="`${p.projectId}-${p.lineId}`">
@@ -100,6 +101,12 @@
                 :step="0.01"
                 controls-position="right"
                 class="col-input"
+              />
+              <el-switch
+                v-model="p.status"
+                active-text="启用"
+                inactive-text="禁用"
+                class="col-action"
               />
             </div>
              <el-empty v-if="!prices.length && !loading" description="暂无可配置的项目" :image-size="80"></el-empty>
@@ -236,7 +243,8 @@ async function loadAndProcessPrices() {
         costPrice: costPriceForSubUser,
         maxPrice: meta.maxPrice ?? null,
         // `agentPrice`: 优先使用用户已有的价格，否则默认为代理的成本价
-        agentPrice: userPriceData ? Number(userPriceData.agentPrice) : costPriceForSubUser
+        agentPrice: userPriceData ? Number(userPriceData.agentPrice) : costPriceForSubUser,
+        status: userPriceData ? userPriceData.status : true, // 默认启用
       };
     });
 
@@ -325,6 +333,7 @@ async function save() {
           // `projectId` 和 `lineId` 作为业务标识
           projectId: p.projectId,
           lineId: p.lineId,
+          status: p.status
         }))
       };
       const priceUpdateRes = await updateUserProjectPrices(pricePayload);
@@ -340,7 +349,8 @@ async function save() {
         userProjectLineId: p.projectTableId,
         price: Number(p.agentPrice),
         projectId: p.projectId,
-        lineId: p.lineId
+        lineId: p.lineId,
+        status: p.status 
       }));
       
       const payload = { ...form.value, projectPrices };
