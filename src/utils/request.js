@@ -1,6 +1,6 @@
 // src/utils/request.js
-const baseURL = 'http://192.168.110.104:8026/'
-// const baseURL = 'https://api.huikecode.com/';
+// const baseURL = 'http://192.168.110.104:8026/'
+const baseURL = 'https://api.huikecode.com/';
 // const baseURL = 'https://api.daguicode.com/';
 
 export async function request(methodFlag, url, jsonData = {}, isquery = false) {

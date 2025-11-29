@@ -2,7 +2,7 @@
   <div class="dashboard-page">
     <!-- 顶部条 -->
 <div class="top-bar">
-  <div class="left-title">💼 代理控制面板</div>
+  <div class="left-title">代理控制面板</div>
 
   <div class="right-actions">
     <el-button
@@ -27,8 +27,6 @@
 
     <!-- 通知栏 -->
     <NoticeBar />
-
-
     <!-- 仪表盘统计 -->
     <div class="stat-section">
       <el-card
@@ -84,8 +82,8 @@ const quickBtns = ref([
   { label: '项目价格配置', path: '/reseller/projects' },
   { label: '账单记录', path: '/reseller/userbill' },
   { label: '取号记录', path: '/reseller/records' },
-   { label: '价格模板管理', path: '/reseller/templates' }
-
+  { label: '价格模板管理', path: '/reseller/templates' },
+  { label: '用户取号线路统计', path: '/reseller/user-line-stats' }
 ])
 
 
@@ -121,6 +119,7 @@ async function loadDashboard() {
         { title: '今日充值', value: `¥${res.data.todaySubUsersRecharge || 0}`, icon: 'el-icon-money' },
         { title: '回码率（24h）', value: `${res.data.subUsersCodeRate || 0}%`, icon: 'el-icon-pie-chart' },
         { title: '代理总利润', value: `¥${res.data.totalProfit || 0}`, icon: 'el-icon-sold-out' }
+
       ]
     } else {
       ElMessage.error(res.message || '获取仪表盘数据失败')

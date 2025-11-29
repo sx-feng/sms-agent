@@ -3,15 +3,15 @@
     <!-- 顶部操作栏 -->
     <div class="page-header">
       <div style="display: flex; align-items: center; gap: 10px;">
-        <el-button type="info" size="small" @click="goBack">⬅ 返回</el-button>
-        <h2>👥 下级管理</h2>
+        <el-button type="info" size="small" @click="goBack">返回</el-button>
+        <h2>下级管理</h2>
       </div>
 
       <div style="display: flex; align-items: center; gap: 10px;">
         <el-input v-model="searchUserName" placeholder="根据用户名模糊查询" clearable size="small" style="width: 160px" @keyup.enter="getUserList" />
-        <el-button type="primary" size="small" @click="getUserList">🔍 查询</el-button>
-        <el-button type="success" size="small" @click="() => { searchUserName = ''; getUserList(); }">🔄 刷新</el-button>
-        <el-button type="primary" size="small" @click="openEditDialog()">➕ 新增下级</el-button>
+        <el-button type="primary" size="small" @click="getUserList">查询</el-button>
+        <el-button type="success" size="small" @click="() => { searchUserName = ''; getUserList(); }">刷新</el-button>
+        <el-button type="primary" size="small" @click="openEditDialog()">新增下级</el-button>
       </div>
     </div>
 
@@ -52,14 +52,16 @@
     </el-table>
 
     <!-- 分页 -->
+<!-- 分页 -->
     <div class="pagination-bar">
-  <el-pagination 
-    v-model:current-page="page" 
-    :page-size="pageSize" 
-    :total="total" 
-    layout="prev, pager, next, jumper, total"
-    /> <!-- 删除了 @current-change -->
-</div>
+      <el-pagination 
+        v-model:current-page="page" 
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 50, 100]"
+        :total="total" 
+        layout="total, sizes, prev, pager, next, jumper"
+      /> 
+    </div>
 
     <!-- 弹窗组件 -->
     <UserEditDialog 
@@ -69,10 +71,11 @@
       @updated="getUserList" 
     />
     <RecordDialog v-if="recordDialogVisible" v-model="recordDialogVisible" :user="currentUser" />
+    <!-- 父组件 Template 底部 -->
     <UserRecharge
       v-if="rechargeDialogVisible"
       v-model="rechargeDialogVisible"
-      :user-id-prop="currentUser?.id"
+      :user-info="currentUser" 
       :action-type-prop="currentActionType"
       @success="getUserList"
     />
@@ -145,6 +148,15 @@ async function getUserList() {
 // 3. 添加 watch 来侦听 page 的变化
 watch(page, () => {
   getUserList()
+})
+
+// 新增：侦听 pageSize 变化
+watch(pageSize, () => {
+  if (page.value === 1) {
+    getUserList()
+  } else {
+    page.value = 1
+  }
 })
 
 function formatRate(value) {

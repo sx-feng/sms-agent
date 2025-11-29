@@ -7,6 +7,16 @@
     width="850px"
     :close-on-click-modal="false"
   >
+  <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+       <el-button 
+         type="warning" 
+         link 
+         @click="pasteFromLocal" 
+         v-if="!isEdit || (isEdit && form.password === '')"
+       >
+         粘贴上次创建的账号密码
+       </el-button>
+    </div>
     <el-form :model="form" label-width="100px" v-loading="loading">
       <el-row :gutter="20">
         <el-col :span="12">
@@ -124,7 +134,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   createAgentUser,
   updateAgentUser,
@@ -140,6 +150,7 @@ const props = defineProps({
   user: { type: Object, default: null }
 })
 const emit = defineEmits(['update:modelValue', 'updated'])
+
 
 const form = ref({})
 const prices = ref([])
@@ -172,6 +183,9 @@ async function handleOpen() {
     }
   }
 
+
+
+
   // 并行加载数据
   await Promise.all([
     loadTemplates(),
@@ -181,6 +195,53 @@ async function handleOpen() {
   loading.value = false
 }
 
+function saveLocalAndAlert(username, password) {
+  localStorage.setItem('LAST_AGENT_SUB_CREDS', JSON.stringify({ username, password }));
+  
+  const text = `账号：${username}\n密码：${password}`;
+  
+  ElMessageBox.alert(
+    `
+    <div style="text-align: center;">
+       <p>下级用户已保存</p>
+       <div style="background: #f0f9eb; color: #67c23a; padding: 10px; margin: 10px 0; border-radius: 4px;">
+         <div>账号: <strong>${username}</strong></div>
+         <div>密码: <strong>${password}</strong></div>
+       </div>
+       <div style="font-size: 12px; color: #999;">点击确定将自动复制到剪贴板</div>
+    </div>
+    `,
+    '操作成功',
+    {
+      dangerouslyUseHTMLString: true,
+      confirmButtonText: '复制并关闭',
+      callback: () => {
+        navigator.clipboard.writeText(text).then(() => {
+            ElMessage.success('已复制');
+        }).catch(err => {
+            console.error(err); // 防止未捕获错误
+        });
+      }
+    }
+  );
+}
+
+function pasteFromLocal() {
+  const cached = localStorage.getItem('LAST_AGENT_SUB_CREDS');
+  if (cached) {
+    try {
+      const { username, password } = JSON.parse(cached);
+      form.value.username = username;
+      form.value.password = password; 
+      ElMessage.success('已粘贴上次信息');
+    } catch(e) {
+      // ✅ 修复3：catch 块不能为空
+      console.error('解析缓存失败', e);
+    }
+  } else {
+    ElMessage.info('没有可粘贴的记录');
+  }
+}
 // 请用下面的版本替换你原来的 loadAndProcessPrices 函数
 
 async function loadAndProcessPrices() {
@@ -255,6 +316,8 @@ async function loadAndProcessPrices() {
   }
 }
 
+
+
 async function loadTemplates() {
   try {
     const res = await getAgentPriceTemplates()
@@ -287,13 +350,7 @@ function applyTemplate(templateId) {
   ElMessage.success(`已应用模板「${tpl.name}」的售价`)
 }
 
-// ==========================================================
-// ✅ [核心修改] 重构 save 函数
-// ==========================================================
-// 请用下面的版本替换你原来的 save 函数
-
 async function save() {
-  // 1. 价格合法性校验 (逻辑不变)
   for (const p of prices.value) {
     if (p.agentPrice < p.costPrice) {
       ElMessage.error(`项目"${p.projectName}"的售价不能低于成本价 ${p.costPrice}`);
@@ -306,46 +363,42 @@ async function save() {
   }
 
   saving.value = true;
+  
+  const currentUsername = form.value.username;
+  const currentPassword = form.value.password; 
+
   try {
-    // 2. 根据是“新增”还是“编辑”执行不同逻辑
     if (isEdit.value) {
-      // --- 编辑逻辑：分两步调用API ---
-
-      // 2.1 准备并调用【更新用户基本信息】接口
       const userPayload = { ...form.value };
-      if (!userPayload.password) {
-        delete userPayload.password;
-      }
+      if (!userPayload.password) delete userPayload.password;
+      
       const userUpdateRes = await updateAgentUser(userPayload);
-      if (userUpdateRes.code !== 200) {
-        throw new Error(userUpdateRes.message || '更新用户信息失败');
-      }
-
-      // 2.2 ✅ [核心修改点 3] 准备并调用【更新价格配置】接口
-      //     为每条价格记录都附上它自己的主键 `id`
+      if (userUpdateRes.code !== 200) throw new Error(userUpdateRes.message);
+      
       const pricePayload = {
         userId: props.user.id,
         projectPrices: prices.value.map(p => ({
-          // `id`: 用户价格记录的主键，后端据此更新数据
           id: p.id,
-          // `price`: 用户要更新的价格
           price: Number(p.agentPrice),
-          // `projectId` 和 `lineId` 作为业务标识
           projectId: p.projectId,
           lineId: p.lineId,
           status: p.status
         }))
       };
       const priceUpdateRes = await updateUserProjectPrices(pricePayload);
-      if (priceUpdateRes.code !== 200) {
-        throw new Error(priceUpdateRes.message || '用户信息已更新，但价格配置更新失败');
+      if (priceUpdateRes.code !== 200) throw new Error(priceUpdateRes.message);
+      
+      ElMessage.success('保存成功');
+      emit('update:modelValue', false);
+      emit('updated');
+
+      if (currentPassword) {
+        // ✅ 调用了 helper 函数，消除 ESLint 错误
+        saveLocalAndAlert(currentUsername, currentPassword);
       }
 
     } else {
-      // --- 新增逻辑：一次性提交 ---
-      // ✅ [核心修改点 4] 使用 `projectTableId` 作为 `userProjectLineId`
       const projectPrices = prices.value.map(p => ({
-        // `userProjectLineId`：在新建时，告诉后端要关联哪个主项目线路
         userProjectLineId: p.projectTableId,
         price: Number(p.agentPrice),
         projectId: p.projectId,
@@ -354,24 +407,20 @@ async function save() {
       }));
       
       const payload = { ...form.value, projectPrices };
-      if (!payload.password) {
-        delete payload.password;
-      }
+      if (!payload.password) delete payload.password;
       
       const createRes = await createAgentUser(payload);
-      if (createRes.code !== 200) {
-        throw new Error(createRes.message || '创建用户失败');
-      }
+      if (createRes.code !== 200) throw new Error(createRes.message);
+      
+      emit('update:modelValue', false);
+      emit('updated');
+      
+      // ✅ 调用了 helper 函数，消除 ESLint 错误
+      saveLocalAndAlert(currentUsername, currentPassword);
     }
-
-    // 3. 全部成功后的操作 (逻辑不变)
-    ElMessage.success('保存成功');
-    emit('update:modelValue', false);
-    emit('updated');
-
   } catch(e) {
-    console.error("保存操作失败：", e);
-    ElMessage.error(e.message || '网络异常，请稍后重试');
+    console.error(e);
+    ElMessage.error(e.message || '操作失败');
   } finally {
     saving.value = false;
   }

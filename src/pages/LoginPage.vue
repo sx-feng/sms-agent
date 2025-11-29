@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <div class="title">大鬼代理登录</div>
+      <div class="title">汇科代理登录</div>
 
       <el-form :model="form" :rules="rules" ref="loginForm" label-position="top" class="login-form">
         <el-form-item label="账号" prop="username">

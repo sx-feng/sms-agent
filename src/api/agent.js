@@ -248,3 +248,60 @@ export const getSubUserProjectPricesById = (userId) => {
 export const getAgentTotalProfit = () => {
   return request(0,'/api/agent/by-user/totalProfit');
 }
+
+/**
+ * 代理-获取下级用户线路统计数据
+  POST /api/agent/stats/user-line
+  接口ID：383783497
+  接口地址：https://app.apifox.com/link/project/7230479/apis/api-383783497
+ */
+export const getUserLineStats = (data) => {
+  return request(1,'/api/agent/stats/user-line',data);
+}
+
+/**
+ * 查询代理自己的账本记录 (对应图片中的筛选功能)
+  GET /api/agent/my-ledger
+  Query 参数
+userName
+string 
+用户名
+可选
+remark
+string 
+备注
+可选
+startTime
+string 
+开始时间
+可选
+endTime
+string 
+结束时间
+可选
+fundType
+integer 
+资金类型
+可选
+ledgerType
+integer 
+账本类型
+可选
+page
+integer 
+页码
+必需
+示例值:
+1
+size
+integer 
+每页条数
+必需
+示例值:
+10
+  接口ID：383883159
+  接口地址：https://app.apifox.com/link/project/7230479/apis/api-383883159
+ */
+export const getAgentMyLedger = (params) => {
+  return request(0,'/api/agent/my-ledger',params,true);
+}
