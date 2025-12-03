@@ -21,7 +21,7 @@
       <el-form-item label="金额">
         <el-input-number
           v-model="amount"
-          :min="1"
+          :min="0"
           style="width: 100%"
           :placeholder="actionType === 'recharge' ? '请输入充值金额' : '请输入扣款金额'"
         />

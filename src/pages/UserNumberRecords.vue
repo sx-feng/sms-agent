@@ -69,6 +69,7 @@
       <el-table :data="records" border stripe v-loading="loading" style="width: 100%">
         <el-table-column prop="projectId" label="项目ID" width="100" align="center" />
         <el-table-column prop="userName" label="用户名" width="150" align="center" />
+        <el-table-column prop="projectName" label="项目名称" width="150" align="center" />
         <el-table-column prop="lineId" label="线路ID" width="100" align="center" />
         <el-table-column prop="phoneNumber" label="手机号" min-width="140" align="center" />
         <el-table-column prop="code" label="验证码" width="120" align="center">

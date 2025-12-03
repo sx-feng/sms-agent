@@ -20,6 +20,10 @@ export const createAgentUser = (data) => request(1, '/api/agent/createUser', dat
 // 修改下级用户信息
 export const updateAgentUser = (data) => request(1, '/api/agent/updateUser', data)
 
+// 批量删除下级用户
+// data 参数示例: [101, 102, 103]
+export const deleteAgentUsers = (data) => request(1, '/api/agent/deleteUsers', data)
+
 // ==================== 余额操作 ====================
 
 // 为下级用户充值

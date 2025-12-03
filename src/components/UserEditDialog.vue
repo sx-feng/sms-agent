@@ -1,53 +1,38 @@
 <template>
-  <el-dialog
-    :title="isEdit ? '编辑下级' : '新增下级'"
-    :model-value="props.modelValue"
-    @update:modelValue="onUpdate"
-    @open="handleOpen"
-    width="850px"
-    :close-on-click-modal="false"
-  >
-  <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
-       <el-button 
-         type="warning" 
-         link 
-         @click="pasteFromLocal" 
-         v-if="!isEdit || (isEdit && form.password === '')"
-       >
-         粘贴上次创建的账号密码
-       </el-button>
+  <el-dialog :title="isEdit ? '编辑下级' : '新增下级'" :model-value="props.modelValue" @update:modelValue="onUpdate"
+    @open="handleOpen" width="850px" :close-on-click-modal="false">
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+      <el-button type="warning" link @click="pasteFromLocal" v-if="!isEdit || (isEdit && form.password === '')">
+        粘贴上次创建的账号密码
+      </el-button>
     </div>
     <el-form :model="form" label-width="100px" v-loading="loading">
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="用户名">
-            <el-input
-              v-model="form.username"
-              placeholder="请输入用户名"
-              :disabled="isEdit"
-            />
+            <el-input v-model="form.username" placeholder="请输入用户名" :disabled="isEdit" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="密码">
-            <el-input
-              v-model="form.password"
-              :placeholder="isEdit ? '不修改请留空' : '请输入密码'"
-            />
+            <el-input v-model="form.password" :placeholder="isEdit ? '不修改请留空' : '请输入密码'" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="是否代理">
-            <el-switch
-              v-model="form.isAgent"
-              active-text="是"
-              inactive-text="否"
-            />
+            <el-switch v-model="form.isAgent" active-text="是" inactive-text="否" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="状态">
-            <el-switch v-model="form.status" :active-value="0" :inactive-value="1" active-text="启用" inactive-text="禁用" />
+          <el-form-item label="用户状态">
+            <el-button-group>
+              <el-button :type="form.status === 0 ? 'success' : ''" :plain="form.status !== 0" @click="form.status = 0">
+                启用
+              </el-button>
+              <el-button :type="form.status === 1 ? 'danger' : ''" :plain="form.status !== 1" @click="form.status = 1">
+                禁用
+              </el-button>
+            </el-button-group>
           </el-form-item>
         </el-col>
       </el-row>
@@ -55,20 +40,9 @@
       <el-divider>项目价格配置</el-divider>
 
       <el-form-item label="快捷应用">
-        <el-select
-          v-model="selectedTemplateId"
-          placeholder="可选择一个价格模板快速应用"
-          clearable
-          filterable
-          @change="applyTemplate"
-          style="width: 100%"
-        >
-          <el-option
-            v-for="tpl in templates"
-            :key="tpl.id"
-            :label="tpl.name"
-            :value="tpl.id"
-          />
+        <el-select v-model="selectedTemplateId" placeholder="可选择一个价格模板快速应用" clearable filterable @change="applyTemplate"
+          style="width: 100%">
+          <el-option v-for="tpl in templates" :key="tpl.id" :label="tpl.name" :value="tpl.id" />
         </el-select>
       </el-form-item>
 
@@ -84,42 +58,15 @@
           </div>
           <div class="price-scroll-area">
             <div class="price-row" v-for="p in prices" :key="`${p.projectId}-${p.lineId}`">
-              <el-input
-                :value="`${p.projectName}`"
-                class="col-project"
-                disabled
-              />
-              <el-input
-                :value="p.lineId"
-                class="col-line"
-                disabled
-              />
-              <el-input
-                :value="p.costPrice"
-                class="col-price"
-                disabled
-              />
-              <el-input
-                :value="p.maxPrice ?? '不限'"
-                class="col-price"
-                disabled
-              />
-              <el-input-number
-                v-model.number="p.agentPrice"
-                :min="p.costPrice"
-                :max="p.maxPrice ?? Infinity"
-                :step="0.01"
-                controls-position="right"
-                class="col-input"
-              />
-              <el-switch
-                v-model="p.status"
-                active-text="启用"
-                inactive-text="禁用"
-                class="col-action"
-              />
+              <el-input :value="`${p.projectName}`" class="col-project" disabled />
+              <el-input :value="p.lineId" class="col-line" disabled />
+              <el-input :value="p.costPrice" class="col-price" disabled />
+              <el-input :value="p.maxPrice ?? '不限'" class="col-price" disabled />
+              <el-input-number v-model.number="p.agentPrice" :min="p.costPrice" :max="p.maxPrice ?? Infinity"
+                :step="0.01" controls-position="right" class="col-input" />
+              <el-switch v-model="p.status" active-text="启用" inactive-text="禁用" class="col-action" />
             </div>
-             <el-empty v-if="!prices.length && !loading" description="暂无可配置的项目" :image-size="80"></el-empty>
+            <el-empty v-if="!prices.length && !loading" description="暂无可配置的项目" :image-size="80"></el-empty>
           </div>
         </div>
       </el-form-item>
@@ -197,9 +144,9 @@ async function handleOpen() {
 
 function saveLocalAndAlert(username, password) {
   localStorage.setItem('LAST_AGENT_SUB_CREDS', JSON.stringify({ username, password }));
-  
+
   const text = `账号：${username}\n密码：${password}`;
-  
+
   ElMessageBox.alert(
     `
     <div style="text-align: center;">
@@ -217,9 +164,9 @@ function saveLocalAndAlert(username, password) {
       confirmButtonText: '复制并关闭',
       callback: () => {
         navigator.clipboard.writeText(text).then(() => {
-            ElMessage.success('已复制');
+          ElMessage.success('已复制');
         }).catch(err => {
-            console.error(err); // 防止未捕获错误
+          console.error(err); // 防止未捕获错误
         });
       }
     }
@@ -232,9 +179,9 @@ function pasteFromLocal() {
     try {
       const { username, password } = JSON.parse(cached);
       form.value.username = username;
-      form.value.password = password; 
+      form.value.password = password;
       ElMessage.success('已粘贴上次信息');
-    } catch(e) {
+    } catch (e) {
       // ✅ 修复3：catch 块不能为空
       console.error('解析缓存失败', e);
     }
@@ -280,7 +227,7 @@ async function loadAndProcessPrices() {
           userPriceMap.set(key, p);
         });
       } else {
-         ElMessage.warning('获取该用户的价格配置失败，将使用默认值');
+        ElMessage.warning('获取该用户的价格配置失败，将使用默认值');
       }
     }
 
@@ -296,7 +243,7 @@ async function loadAndProcessPrices() {
         id: userPriceData ? userPriceData.id : null,
         // `projectTableId`: 项目线路在主表中的ID，用于新建关联关系
         projectTableId: agentProj.projectTableId,
-        
+
         // 其他基础信息
         projectName: agentProj.projectName,
         projectId: agentProj.projectId,
@@ -357,24 +304,24 @@ async function save() {
       return;
     }
     if (p.maxPrice !== null && p.agentPrice > p.maxPrice) {
-       ElMessage.error(`项目"${p.projectName}"的售价不能高于最高价 ${p.maxPrice}`);
+      ElMessage.error(`项目"${p.projectName}"的售价不能高于最高价 ${p.maxPrice}`);
       return;
     }
   }
 
   saving.value = true;
-  
+
   const currentUsername = form.value.username;
-  const currentPassword = form.value.password; 
+  const currentPassword = form.value.password;
 
   try {
     if (isEdit.value) {
       const userPayload = { ...form.value };
       if (!userPayload.password) delete userPayload.password;
-      
+
       const userUpdateRes = await updateAgentUser(userPayload);
       if (userUpdateRes.code !== 200) throw new Error(userUpdateRes.message);
-      
+
       const pricePayload = {
         userId: props.user.id,
         projectPrices: prices.value.map(p => ({
@@ -387,7 +334,7 @@ async function save() {
       };
       const priceUpdateRes = await updateUserProjectPrices(pricePayload);
       if (priceUpdateRes.code !== 200) throw new Error(priceUpdateRes.message);
-      
+
       ElMessage.success('保存成功');
       emit('update:modelValue', false);
       emit('updated');
@@ -403,22 +350,22 @@ async function save() {
         price: Number(p.agentPrice),
         projectId: p.projectId,
         lineId: p.lineId,
-        status: p.status 
+        status: p.status
       }));
-      
+
       const payload = { ...form.value, projectPrices };
       if (!payload.password) delete payload.password;
-      
+
       const createRes = await createAgentUser(payload);
       if (createRes.code !== 200) throw new Error(createRes.message);
-      
+
       emit('update:modelValue', false);
       emit('updated');
-      
+
       // ✅ 调用了 helper 函数，消除 ESLint 错误
       saveLocalAndAlert(currentUsername, currentPassword);
     }
-  } catch(e) {
+  } catch (e) {
     console.error(e);
     ElMessage.error(e.message || '操作失败');
   } finally {
@@ -458,9 +405,10 @@ onMounted(() => {
   color: #606266;
   border-bottom: 1px solid #dcdfe6;
 }
+
 .price-scroll-area {
-    max-height: 300px;
-    overflow-y: auto;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .price-row {
@@ -470,8 +418,9 @@ onMounted(() => {
   align-items: center;
   padding: 6px 12px;
 }
+
 .price-row:not(:last-child) {
-    border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid #ebeef5;
 }
 
 .col-input {
