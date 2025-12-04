@@ -125,25 +125,26 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getAgentPriceTemplates,
   addAgentPriceTemplate,
   updateAgentPriceTemplate,
   deleteAgentPriceTemplate,
-  getProjectList
+  getProjectList,
+  getAgentSelfTemplateItems // [需确保此API已定义] 对应后端 /api/agent/price-templates/my
 } from '@/api/agent'
-import { getAgentProjectPrice } from '@/api/agent.projectPrice'
+// 删除旧的引用
+// import { getAgentProjectPrice } from '@/api/agent.projectPrice'
 
-// 状态
-import { useRouter } from 'vue-router'
 const router = useRouter()
 
 function goBack() {
   router.back() 
 }
 
-
+// 状态定义
 const templates = ref([])
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -157,20 +158,19 @@ const form = ref({
   items: []
 })
 
-// ✅ 搜索过滤
+// 搜索过滤
 const filteredTemplates = computed(() => {
   if (!searchKey.value) return templates.value
   return templates.value.filter(t =>
     t.name.toLowerCase().includes(searchKey.value.toLowerCase())
   )
 })
-// 搜索模板
+
+// 搜索
 async function handleSearch() {
   loading.value = true
   try {
-    const res = await getAgentPriceTemplates({
-      name: searchKey.value.trim()
-    })
+    const res = await getAgentPriceTemplates({ name: searchKey.value.trim() })
     if (res.code === 200) {
       templates.value = res.data || []
       ElMessage.success('查询成功')
@@ -184,12 +184,11 @@ async function handleSearch() {
   }
 }
 
-// ✅ 加载模板数据
+// 加载列表
 async function loadTemplates() {
   loading.value = true
   try {
     const res = await getAgentPriceTemplates()
-    console.log(res,"")
     if (res.code === 200) {
       templates.value = res.data || []
     } else {
@@ -202,120 +201,127 @@ async function loadTemplates() {
   }
 }
 
+// 打开弹窗（核心修改逻辑）
 async function openDialog(row = null) {
   loading.value = true;
   dialogVisible.value = true;
 
   try {
-    // 步骤 1: 并发获取所有项目列表和代理的专属价格配置，提高效率
-    const [projectRes, agentPriceRes] = await Promise.all([
+    // 步骤 1: 并发获取 [所有项目列表] 和 [代理商自己的模板价格(成本价)]
+    const [projectRes, myTemplateRes] = await Promise.all([
       getProjectList({ pageSize: -1 }),
-      getAgentProjectPrice()
+      getAgentSelfTemplateItems() // 替换为新接口
     ]);
 
-    // 校验项目列表接口
+    // 校验
     if (projectRes.code !== 200) {
       ElMessage.error(projectRes.message || '加载项目列表失败');
       dialogVisible.value = false;
       return;
     }
-    // 校验代理价格接口（非致命错误，可以继续）
-    if (agentPriceRes.code !== 200) {
-      ElMessage.warning(agentPriceRes.message || '获取代理项目价格失败，将使用默认最低价');
+    if (myTemplateRes.code !== 200) {
+      // 如果获取不到成本价，给出提示，后续逻辑会 fallback 到项目最低价
+      ElMessage.warning(myTemplateRes.message || '获取您的成本价失败，将使用系统默认值');
     }
 
     const latestProjects = projectRes.data.records || [];
-    const agentPrices = agentPriceRes.data || [];
+    const myTemplateItems = myTemplateRes.data || [];
 
-    // 步骤 2: 创建一个代理价格的映射表，方便快速查找
-    // Map 的 key 是 'projectId_lineId', value 是 agentPrice
-    const agentPriceMap = new Map(
-      agentPrices.map(item => [`${item.projectId}_${item.lineId}`, item.agentPrice])
+    // 步骤 2: 创建成本价映射表 (Key: projectId_lineId, Value: price)
+    // 注意：这里的 item.price 就是代理商的拿货价（成本价）
+    const costMap = new Map(
+      myTemplateItems.map(item => [`${item.projectId}_${item.lineId}`, item.price])
     );
 
-    // 步骤 3: 根据是“编辑”还是“新建”来构建表单数据
+    // 步骤 3: 构建表单数据
     if (row) {
-      // ✅ 编辑模式
+      // --- 编辑模式 ---
       form.value = {
         id: row.id,
         name: row.name,
         items: []
       };
 
-      // 创建一个已保存在模板中的售价映射表
+      // 已保存的售价映射
       const savedPriceMap = new Map(
         row.items.map(item => [`${item.projectId}_${item.lineId}`, item.price])
       );
 
       form.value.items = latestProjects.map(p => {
         const key = `${p.projectId}_${p.lineId}`;
-        const agentPrice = agentPriceMap.get(key); // 从代理价格Map中查找
-        const savedPrice = savedPriceMap.get(key); // 从已存模板Map中查找
+        const costPrice = costMap.get(key); // 代理商成本
+        const savedPrice = savedPriceMap.get(key); // 已保存的售价
 
         return {
           projectId: p.projectId,
           projectName: p.projectName,
           lineId: p.lineId,
           priceMax: p.priceMax,
-          // 核心逻辑: 如果代理有专属价格(agentPrice)，就用它；否则，用项目默认的最低价(p.priceMin)
-          priceMin: agentPrice !== undefined ? agentPrice : p.priceMin,
-          // 售价逻辑: 如果模板里存了价格，就用它；否则，使用默认价
+          // 最低售价逻辑: 必须 >= 成本价。如果无成本价，则 >= 系统默认最低价
+          priceMin: costPrice !== undefined ? costPrice : p.priceMin,
+          // 当前售价逻辑: 优先用已保存的，否则默认设为最高价
           price: savedPrice !== undefined ? savedPrice : (p.priceMax ?? p.priceMin),
         };
       });
 
     } else {
-      // ✅ 新建模式
+      // --- 新建模式 ---
       form.value = { id: null, name: '', items: [] };
 
       form.value.items = latestProjects.map(p => {
         const key = `${p.projectId}_${p.lineId}`;
-        const agentPrice = agentPriceMap.get(key); // 从代理价格Map中查找
+        const costPrice = costMap.get(key);
 
         return {
           projectId: p.projectId,
           projectName: p.projectName,
           lineId: p.lineId,
           priceMax: p.priceMax,
-          // 核心逻辑: 如果代理有专属价格(agentPrice)，就用它；否则，用项目默认的最低价(p.priceMin)
-          priceMin: agentPrice !== undefined ? agentPrice : p.priceMin,
-          // 售价逻辑: 新建时默认使用最高价
-          price: p.priceMax ?? (agentPrice !== undefined ? agentPrice : p.priceMin),
+          // 最低售价逻辑同上
+          priceMin: costPrice !== undefined ? costPrice : p.priceMin,
+          // 默认售价: 设为最高价，若无最高价则设为成本价
+          price: p.priceMax ?? (costPrice !== undefined ? costPrice : p.priceMin),
         };
       });
     }
   } catch (e) {
-    console.error("加载模板数据时发生异常:", e);
-    ElMessage.error('网络异常，无法加载项目价格');
+    console.error("加载模板数据异常:", e);
+    ElMessage.error('网络异常，无法加载数据');
     dialogVisible.value = false;
   } finally {
     loading.value = false;
   }
 }
 
-
-
-// ✅ 添加项目
+// 辅助方法保持不变
 function addItem() {
   form.value.items.push({
     projectId: '',
     projectName: '',
     lineId: '',
-    price: 0,
-    costPrice: 0
+    price: 0
   })
 }
 
-// ✅ 删除项目
 function removeItem(index) {
   form.value.items.splice(index, 1)
 }
 
-// ✅ 保存模板
 async function saveTemplate() {
   if (!form.value.name.trim()) {
     ElMessage.warning('请输入模板名称')
     return
+  }
+  // 简单的前端校验：售价不能低于成本(priceMin)
+  for (const item of form.value.items) {
+    if (item.price < item.priceMin) {
+      ElMessage.error(`项目 [${item.projectName}] 的售价不能低于您的成本价 (${item.priceMin})`)
+      return
+    }
+    if (item.priceMax && item.price > item.priceMax) {
+      ElMessage.error(`项目 [${item.projectName}] 的售价不能高于系统限制 (${item.priceMax})`)
+      return
+    }
   }
 
   saving.value = true
@@ -330,9 +336,7 @@ async function saveTemplate() {
     if (res.code === 200) {
       ElMessage.success('保存成功')
       dialogVisible.value = false
-         setTimeout(() => {
-        loadTemplates()
-      }, 200)
+      setTimeout(() => { loadTemplates() }, 200)
     } else {
       ElMessage.error(res.message || '保存失败')
     }
@@ -341,7 +345,6 @@ async function saveTemplate() {
   }
 }
 
-// ✅ 删除模板
 async function deleteTemplate(row) {
   ElMessageBox.confirm(`确定删除模板「${row.name}」吗？`, '提示', {
     type: 'warning'
@@ -357,8 +360,7 @@ async function deleteTemplate(row) {
 }
 
 onMounted(() => {
-  loadTemplates(),
-  addItem() 
+  loadTemplates()
 })
 </script>
 

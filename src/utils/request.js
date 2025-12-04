@@ -1,7 +1,22 @@
 // src/utils/request.js
-// const baseURL = 'http://192.168.110.104:8026/'
+
+import router from '../router'
+
+const baseURL = 'http://192.168.110.104:8026/'
 //  const baseURL = 'https://api.huikecode.com/';
-const baseURL = 'https://api.daguicode.com/';
+// const baseURL = 'https://api.daguicode.com/';
+
+/**
+ * 处理 401 跳转逻辑
+ */
+function handleUnauthorized() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('agent_token');
+  router.replace('/login').catch(err => {
+      console.warn('路由跳转异常:', err)
+  });
+}
+
 
 export async function request(methodFlag, url, jsonData = {}, isquery = false) {
   try {
@@ -50,8 +65,13 @@ export async function request(methodFlag, url, jsonData = {}, isquery = false) {
     try {
       data = JSON.parse(text)
     } catch (e) {
-      console.error('⚠️ JSON 解析失败:', text)
+      console.error('JSON 解析失败:', text)
       return { ok: false, code: 0, message: '返回数据不是 JSON 格式', data: text }
+    }
+    if (data.code === 401) {
+        console.warn('Token 失效，跳转登录页...');
+        handleUnauthorized();
+        return { ok: false, code: 401, message: data.message || '登录失效', data: null };
     }
 
     return {
@@ -65,3 +85,4 @@ export async function request(methodFlag, url, jsonData = {}, isquery = false) {
     return { ok: false, code: -1, message: '网络异常或服务器错误', data: null }
   }
 }
+

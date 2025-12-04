@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="sub-users-page">
-    <!-- 顶部操作栏 -->
+    <!-- 顶部操作栏 (保持不变) -->
     <div class="page-header">
       <div style="display: flex; align-items: center; gap: 10px;">
         <el-button type="info" size="small" @click="goBack">返回</el-button>
@@ -19,7 +19,6 @@
         <el-button type="primary" size="small" @click="getUserList">查询</el-button>
         <el-button type="success" size="small" @click="() => { searchUserName = ''; getUserList(); }">刷新</el-button>
         
-        <!-- 新增：批量删除按钮 -->
         <el-button 
           type="danger" 
           size="small" 
@@ -33,8 +32,7 @@
       </div>
     </div>
 
-    <!-- 表格 -->
-    <!-- 修改：添加 @selection-change 事件监听 -->
+    <!-- 表格 (保持不变) -->
     <el-table 
       :data="tableData" 
       border 
@@ -42,14 +40,14 @@
       v-loading="loading"
       @selection-change="handleSelectionChange"
     >
-      <!-- 新增：多选框列 -->
       <el-table-column type="selection" width="55" align="center" />
-      
-      <!-- 这里的prop="id" 假设后端返回的主键字段名为 id -->
       <el-table-column prop="id" label="ID" width="80" sortable />
       <el-table-column prop="userName" label="用户名" />
-      <!-- 创建时间 -->
       <el-table-column prop="createTime" label="注册时间" width="180" />
+      <!-- 价格模板id templateId -->
+      <el-table-column prop="templateId" label="价格模板ID" />
+      <!-- 价格模板名称 templateName -->
+      <el-table-column prop="templateName" label="价格模板名称" />
       <el-table-column prop="balance" label="余额" />
       <el-table-column prop="status" label="状态">
         <template #default="{ row }">
@@ -72,7 +70,6 @@
         </template>
       </el-table-column>
 
-      <!-- 操作列 -->
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button size="small" type="primary" @click="openEditDialog(row)">编辑</el-button>
@@ -83,7 +80,7 @@
       </el-table-column>
     </el-table>
 
-    <!-- 分页 -->
+    <!-- 分页 (保持不变) -->
     <div class="pagination-bar">
       <el-pagination 
         v-model:current-page="page" 
@@ -95,12 +92,15 @@
     </div>
 
     <!-- 弹窗组件 -->
+    <!-- 【修复重点】：移除了 v-if="editDialogVisible" -->
+    <!-- 只需要 v-model 控制即可，子组件 UserEditDialog 内部的 el-dialog 的 @open 事件才能正常触发 -->
     <UserEditDialog 
-      v-if="editDialogVisible" 
       v-model="editDialogVisible" 
       :user="currentUser" 
       @updated="getUserList" 
     />
+
+    <!-- 其他弹窗可以保留 v-if，如果它们内部使用的是 onMounted 而不是 @open -->
     <RecordDialog v-if="recordDialogVisible" v-model="recordDialogVisible" :user="currentUser" />
     <UserRecharge
       v-if="rechargeDialogVisible"
@@ -113,13 +113,13 @@
 </template>
 
 <script setup>
+// Script 部分无需修改，保持原样即可
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus' // 引入 ElMessageBox
+import { ElMessage, ElMessageBox } from 'element-plus'
 import UserEditDialog from '../components/UserEditDialog.vue'
 import RecordDialog from '../components/RecordDialog.vue'
 import UserRecharge from '../components/UserRecharge.vue'
-// 引入批量删除 API
 import { listAgentUsers, deleteAgentUsers } from '@/api/agent' 
 
 const router = useRouter()
@@ -129,8 +129,6 @@ const tableData = ref([])
 const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
-
-// 新增：存储选中的 ID 列表
 const selectedIds = ref([])
 
 const editDialogVisible = ref(false)
@@ -143,7 +141,6 @@ function goBack() {
   router.back()
 }
 
-// 获取下级用户数据
 async function getUserList() {
   loading.value = true
   try {
@@ -168,18 +165,14 @@ async function getUserList() {
   }
 }
 
-// 新增：处理表格多选变化
 function handleSelectionChange(selection) {
-  // 提取选中行的 id 放入 selectedIds 数组
   selectedIds.value = selection.map(item => item.id)
 }
 
-// 新增：处理批量删除
 async function handleBatchDelete() {
   if (selectedIds.value.length === 0) return
 
   try {
-    // 弹出确认框
     await ElMessageBox.confirm(
       `确定要删除选中的 ${selectedIds.value.length} 个用户吗？此操作不可恢复，且会删除关联的项目配置。`,
       '警告',
@@ -190,21 +183,17 @@ async function handleBatchDelete() {
       }
     )
 
-    // 用户点击确定后，执行删除请求
     loading.value = true
     const res = await deleteAgentUsers(selectedIds.value)
     
     if (res.code === 200) {
       ElMessage.success('删除成功')
-      // 清空选中状态（虽然刷新列表通常会重置，但手动清空更安全）
       selectedIds.value = []
-      // 刷新列表
       getUserList()
     } else {
       ElMessage.error(res.message || '删除失败')
     }
   } catch (error) {
-    // 捕获取消点击或网络错误
     if (error !== 'cancel') {
       console.error(error)
       ElMessage.error('操作失败')

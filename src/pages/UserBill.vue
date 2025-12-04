@@ -147,7 +147,8 @@ const fundTypeOptions = ref([
   { value: 1, label: '代理充值' },
   { value: 2, label: '代理扣款' },
   { value: 4, label: '代理回款' },
-  { value: 3, label: '管理员操作' }
+  { value: 3, label: '管理员操作' },
+  { value: 5, label: '超时退款' }
 ])
 
 // 辅助函数：获取资金类型文字

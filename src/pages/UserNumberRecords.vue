@@ -7,7 +7,7 @@
 
     <!-- 页面标题和刷新 -->
     <div class="page-header">
-      <h2>📱 下级用户取号记录</h2>
+      <h2>下级用户取号记录</h2>
       <el-button type="primary" size="small" @click="loadRecords" :loading="loading">
         🔄 刷新数据
       </el-button>

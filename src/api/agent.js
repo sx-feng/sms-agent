@@ -309,3 +309,25 @@ integer
 export const getAgentMyLedger = (params) => {
   return request(0,'/api/agent/my-ledger',params,true);
 }
+
+// 1. 根据用户id获取用户模板配置的接口 (用于编辑回显)
+export const getAgentSubUserConfig = (userId) => {
+  // 注意：这里传参是 { userId } 对象，对应后端 @RequestParam
+  return request(0, '/api/agent/user/config-info', { userId }, true);
+};
+
+// 2. 根据id获取价格模板明细接口 (用于选中模板后的预览)
+export const getAgentTemplateItems = (templateId) => {
+  return request(0, `/api/agent/price-templates/${templateId}/items`)
+}
+
+// 3. 获取当前代理自己的价格模板列表 (用于下拉框选择)
+export const getAgentPriceTemplatesby = () => {
+  return request(0, '/api/agent/template/list');
+}
+
+// 获取代理自己的模板配置（成本价）
+// 对应后端: @GetMapping("/price-templates/my")
+export const getAgentSelfTemplateItems = () => {
+  return request(0, '/api/agent/price-templates/my');
+}

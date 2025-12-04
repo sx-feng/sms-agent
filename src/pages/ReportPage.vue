@@ -7,7 +7,7 @@
 
     <!-- 标题 -->
     <div class="page-header">
-      <h2>📊 代理端数据报表</h2>
+      <h2>代理端数据报表</h2>
       <el-button type="primary" size="small" @click="loadReport" :loading="loading">
         🔄 刷新数据
       </el-button>
