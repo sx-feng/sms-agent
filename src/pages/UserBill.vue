@@ -65,6 +65,15 @@
               <el-button type="primary" @click="handleSearch">查询</el-button>
               <el-button @click="resetFilter">重置</el-button>
               <el-button type="success" @click="exportExcel">导出</el-button>
+              <el-button 
+    v-if="viewMode === 'my'" 
+    type="danger" 
+    plain 
+    :loading="clearLoading"
+    @click="handleClearSelfLedger"
+  >
+    清理记录
+  </el-button>
             </div>
           </div>
         </div>
@@ -114,10 +123,10 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage,ElMessageBox  } from 'element-plus'
 import * as XLSX from 'xlsx'
 // 引入两个API：UserLedger(下级), getAgentMyLedger(自己)
-import { UserLedger, getAgentMyLedger } from '@/api/agent'
+import { UserLedger, getAgentMyLedger ,leaderClear } from '@/api/agent'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -240,6 +249,44 @@ const fetchBills = async () => {
     ElMessage.error('系统错误')
   } finally {
     loading.value = false
+  }
+}
+
+// --- 新增：清理逻辑 ---
+const clearLoading = ref(false)
+
+const handleClearSelfLedger = async () => {
+  try {
+    // 危险操作，必须强制弹窗确认
+    await ElMessageBox.confirm(
+      '确定要清空您所有的历史账单记录吗？清理后将无法恢复，请谨慎操作！',
+      '安全警告',
+      {
+        confirmButtonText: '确定清理',
+        cancelButtonText: '取消',
+        type: 'error',
+        confirmButtonClass: 'el-button--danger',
+      }
+    )
+
+    clearLoading.value = true
+    const res = await leaderClear()
+    
+    // 根据你的 request 封装逻辑判断，通常是 res.ok 或 res.code === 200
+    if (res.ok || res.code === 200) {
+      ElMessage.success('账单清理成功')
+      currentPage.value = 1
+      fetchBills() // 刷新列表
+    } else {
+      ElMessage.error(res.message || '清理失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Clear ledger error:', error)
+      ElMessage.error('系统繁忙，请稍后再试')
+    }
+  } finally {
+    clearLoading.value = false
   }
 }
 

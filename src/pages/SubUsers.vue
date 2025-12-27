@@ -19,14 +19,14 @@
         <el-button type="primary" size="small" @click="getUserList">查询</el-button>
         <el-button type="success" size="small" @click="() => { searchUserName = ''; getUserList(); }">刷新</el-button>
         
-        <el-button 
+        <!-- <el-button 
           type="danger" 
           size="small" 
           :disabled="selectedIds.length === 0" 
           @click="handleBatchDelete"
         >
           批量删除
-        </el-button>
+        </el-button> -->
         
         <el-button type="primary" size="small" @click="openEditDialog()">新增下级</el-button>
       </div>
@@ -40,7 +40,7 @@
       v-loading="loading"
       @selection-change="handleSelectionChange"
     >
-      <el-table-column type="selection" width="55" align="center" />
+      <!-- <el-table-column type="selection" width="55" align="center" /> -->
       <el-table-column prop="id" label="ID" width="80" sortable />
       <el-table-column prop="userName" label="用户名" />
       <el-table-column prop="createTime" label="注册时间" width="180" />
@@ -168,7 +168,7 @@ async function getUserList() {
 function handleSelectionChange(selection) {
   selectedIds.value = selection.map(item => item.id)
 }
-
+// eslint-disable-next-line no-unused-vars
 async function handleBatchDelete() {
   if (selectedIds.value.length === 0) return
 

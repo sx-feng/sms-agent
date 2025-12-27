@@ -9,7 +9,7 @@
     <div class="page-header">
       <h2>下级用户取号记录</h2>
       <el-button type="primary" size="small" @click="loadRecords" :loading="loading">
-        🔄 刷新数据
+        刷新数据
       </el-button>
     </div>
 
@@ -61,6 +61,16 @@
         />
         <el-button type="primary" size="small" @click="handleSearch">查询</el-button>
         <el-button size="small" @click="resetFilters">重置</el-button>
+         <!-- 新增：清理按钮 -->
+  <el-button 
+    type="danger" 
+    size="small" 
+    plain 
+    :loading="clearLoading"
+    @click="handleClearHistory"
+  >
+    清理本人号码获取历史记录
+  </el-button>
       </div>
     </el-card>
 
@@ -115,9 +125,9 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage ,ElMessageBox} from 'element-plus'
 import { useRouter } from 'vue-router'
-import { getAgentSubordinateNumberRecords } from '@/api/agent'
+import { getAgentSubordinateNumberRecords ,numberClear } from '@/api/agent'
 
 const router = useRouter()
 const loading = ref(false)
@@ -138,6 +148,45 @@ const filters = reactive({
   charged: '', // '' 或 null 均可
   dateRange: []
 })
+
+// --- 新增：清理逻辑 ---
+const clearLoading = ref(false)
+
+const handleClearHistory = async () => {
+  try {
+    // 物理清理是危险操作，必须增加二次确认
+    await ElMessageBox.confirm(
+      '确定要永久清空您的所有历史号码记录吗？清理后数据不可恢复，请谨慎操作！',
+      '安全警告',
+      {
+        confirmButtonText: '确定清理',
+        cancelButtonText: '取消',
+        type: 'error',
+        confirmButtonClass: 'el-button--danger',
+      }
+    )
+
+    clearLoading.value = true
+    const res = await numberClear()
+    
+    // 兼容你项目中 res.code 或 res.ok 的判断逻辑
+    if (res.code === 200 || res.ok) {
+      ElMessage.success('历史号码记录清理成功')
+      pagination.page = 1
+      loadRecords() // 刷新列表
+    } else {
+      ElMessage.error(res.message || '清理失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Clear numbers error:', error)
+      ElMessage.error('系统繁忙，清理失败')
+    }
+  } finally {
+    clearLoading.value = false
+  }
+}
+
 
 const goBack = () => router.back()
 

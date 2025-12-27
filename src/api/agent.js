@@ -331,3 +331,21 @@ export const getAgentPriceTemplatesby = () => {
 export const getAgentSelfTemplateItems = () => {
   return request(0, '/api/agent/price-templates/my');
 }
+/**
+代理：清理自己的历史账本记录
+  POST /api/agent/ledger/clear
+  接口ID：397832353
+  接口地址：https://app.apifox.com/link/project/7230479/apis/api-397832353
+ */
+export const leaderClear =()=>{
+  return request(1,`/api/agent/ledger/clear`);
+} 
+/**
+ * 代理：清理自己的历史号码记录
+  POST /api/agent/number/clear
+  接口ID：397832354
+  接口地址：https://app.apifox.com/link/project/7230479/apis/api-397832354
+ */
+export const numberClear =()=>{
+  return request(1,`/api/agent/number/clear`);
+} 
