@@ -93,8 +93,9 @@ async function handleSubmit() {
         ? await rechargeAgentUser(targetUserId, amount.value)
         : await deductAgentUser(targetUserId, amount.value)
 
-    if (res.ok) { // 假设你的 request 封装返回结构包含 ok
-      ElMessage.success(actionType.value === 'recharge' ? '充值成功' : '扣款成功')
+    if (res.ok) { // 假设你的 request 封装返回结构包含 ok  res.message || '操作成功:'+res.data || ''
+      console.log('操作成功,返回充值参数:', res)
+      ElMessage.info(`${res.message || '操作成功:'} ${res.data || ''}`)
       emit('success')
       emit('update:modelValue', false)
     } else {
